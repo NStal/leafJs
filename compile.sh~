@@ -1,0 +1,12 @@
+#!/bin/bash
+echo "compile components"
+coffee -c -o ./compiled/ ./project/*.coffee 
+echo "remove old leaf.js"
+rm ./compiled/leaf.js
+cd ./compiled/
+files=("base.js util.js widget.js")
+for js in $files ; do
+    cat $js >> ./leaf.js
+done
+cd ..
+
