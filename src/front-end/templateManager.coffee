@@ -17,14 +17,14 @@
             for tid in @tids
                 @templates[tid] = all[tid]
             if @_isRequirementComplete()
-                @emit("ready",@templates)
+                @_ready()
                 return this
             remain = @_getNotCompleteRequirements()
             remainTemplates = @_fromDomForEach(remain)
             for tid in remain
                 @templates[tid] = remainTemplates[tid]
             if @_isRequirementComplete()
-                @emit("ready",@templates)
+                @_ready()
                 return this
         
             remain = @_getNotCompleteRequirements()
@@ -35,10 +35,12 @@
                         return 
                     @templates[tid] = template
                     if @_isRequirementComplete()
-                        @emit("ready",@templates)
+                        @_ready()
 
                          
-            ) 
+            )
+        _ready:()->
+            @emit "ready",@templates
         _getNotCompleteRequirements:()->
             (tid for tid in @tids when !@templates[tid])
         _isRequirementComplete: ()->
@@ -53,19 +55,22 @@
             catch e
                 return {}
         #return templatesJson with member of tid that are found in DOM
-        _fromDomForEach:(tids) ->
+        _fromDomForEach:(tids)->
             templates = {}
             for tid in tids
                 templateNode = document.getElementById("leaf-templates-#{{tid}}");
                 templates[tid] = if templateNode then templateNode.innerHTML else undefined
             templates
         #callback err,tid,
-        _fromXHRForEach:(tids,callback) ->
-            
+        _fromXHRForEach:(tids,callback)->
             for tid in tids
+                if tid.indexOf(".") >=1
+                    targetURI = @baseUrl+tid
+                else
+                    targetURI = @baseUrl+tid+@suffix
                 (()=>
-                    XHR = new XMLHttpRequest()
-                    XHR.open("GET",@baseUrl+tid+@suffix,true)
+                    XHR = new XMLHttpRequest() 
+                    XHR.open("GET",targetURI,true)
                     XHR.send(null)
                     XHR.tid = tid
                     XHR.terminator = setTimeout(()=>

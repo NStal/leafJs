@@ -40,6 +40,9 @@
         return function() {
           var body, callback, hasValue, holderIndex, i, index, lastIndex, params, placeHolder, placeHoldersValue, url, xhr, _i, _index, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3, _ref4;
           params = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+          params = params.map(function(value) {
+            return encodeURIComponent(value);
+          });
           placeHoldersValue = [];
           if (params.length === component.placeHolders.length && (((_ref = typeof params[0]) === "undefined" || _ref === "number" || _ref === "string") || params[0] instanceof String)) {
             placeHoldersValue = params;

@@ -36,7 +36,7 @@
           this.templates[tid] = all[tid];
         }
         if (this._isRequirementComplete()) {
-          this.emit("ready", this.templates);
+          this._ready();
           return this;
         }
         remain = this._getNotCompleteRequirements();
@@ -46,7 +46,7 @@
           this.templates[tid] = remainTemplates[tid];
         }
         if (this._isRequirementComplete()) {
-          this.emit("ready", this.templates);
+          this._ready();
           return this;
         }
         remain = this._getNotCompleteRequirements();
@@ -57,9 +57,13 @@
           }
           _this.templates[tid] = template;
           if (_this._isRequirementComplete()) {
-            return _this.emit("ready", _this.templates);
+            return _this._ready();
           }
         });
+      };
+
+      TemplateManager.prototype._ready = function() {
+        return this.emit("ready", this.templates);
       };
 
       TemplateManager.prototype._getNotCompleteRequirements = function() {
@@ -109,12 +113,12 @@
       };
 
       TemplateManager.prototype._fromXHRForEach = function(tids, callback) {
-        var tid, _fn, _i, _len,
+        var targetURI, tid, _fn, _i, _len,
           _this = this;
         _fn = function() {
           var XHR;
           XHR = new XMLHttpRequest();
-          XHR.open("GET", _this.baseUrl + tid + _this.suffix, true);
+          XHR.open("GET", targetURI, true);
           XHR.send(null);
           XHR.tid = tid;
           XHR.terminator = setTimeout(function() {
@@ -139,6 +143,11 @@
         };
         for (_i = 0, _len = tids.length; _i < _len; _i++) {
           tid = tids[_i];
+          if (tid.indexOf(".") >= 1) {
+            targetURI = this.baseUrl + tid;
+          } else {
+            targetURI = this.baseUrl + tid + this.suffix;
+          }
           _fn();
         }
         return null;

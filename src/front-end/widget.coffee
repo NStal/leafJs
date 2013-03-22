@@ -3,8 +3,7 @@
     class Widget extends Leaf.EventEmitter
         constructor: (@template) ->
             super()
-            @node = null
-            
+            @node = null 
             @$node = null
             @node$ = null
             @nodes = []
@@ -13,19 +12,29 @@
             if !template then return
             @initTemplate(@template)
         # make template into HTMLElement
-        # template can be only a single Node
-        # or only the first node is used
+        # if template is html strings
+        # it will parsed into HTMLElement
+        # if template start with #
+        # it will be considered as a DOMElement in the current DOM tree
         initTemplate : (template,option) ->
             if not template
                 throw "invalid template #{template}"
             @nodes = []
             if typeof template == "string"
-                tempNode = document.createElement("div");
-                tempNode.innerHTML = template.trim()
-                @node = tempNode.children[0] 
-                for node in tempNode.children
-                    @nodes.push(node)
-                    node.widget = this
+                if (template.indexOf "#") is 0
+                    @node = document.getElementById template.substring(1)
+                    if not @node
+                        console.error "template of id",template.substring(1),"not found"
+                        return
+                    @nodes = [@node]
+                    @node.widget = this
+                else
+                    tempNode = document.createElement("div");
+                    tempNode.innerHTML = template.trim()
+                    @node = tempNode.children[0] 
+                    for node in tempNode.children
+                        @nodes.push(node)
+                        node.widget = this
             else if Util.isHTMLNode(template)
                     @node = template
                     @node.widget = this
@@ -40,23 +49,38 @@
                 @$node = $(@node)
                 @node$ = @$node
             @initUI()
-            @emit("ready")
+            @initSubWidgets()
             Widget.emit "widget",this
-            
+        initSubWidgets:()->
+            for node in @nodes
+                widgets = node.getElementsByTagName("widget")
+                # DOM change cause widgets change
+                # so we buffered it
+                _widgets = []
+                for item in widgets
+                    _widgets.push item
+                widgets = _widgets
+                for widget,index in widgets
+                    name = widget.getAttribute "data-widget"
+                    if not name
+                        continue
+                    if this[name] instanceof Widget
+                        this[name].replace widget
+                    else
+                        console.error "Widget named",name,"not exists for",widget
+                        console.trace()
         initUI:()->
             if not @nodes
                 throw "invalid root #{@nodes}"
             for node in @nodes
                 elems = node.getElementsByTagName("*")
-                subNode = node
-                if id = subNode.getAttribute "data-id"
-                    @UI[id] = subNode
-                    subNode.widget = this
-                    @_delegateEventForControl(id)
-                    if typeof $ is "function"
-                        @UI[id+"$"] = @UI["$"+id] = $(subNode)
-
+                _elems = [node]
+                for elem in elems
+                    _elems.push elem
+                elems = _elems
                 for subNode in elems
+                    if subNode.tagName.toLowerCase() is "widget"
+                        continue
                     if id = subNode.getAttribute "data-id"
                         @UI[id] = subNode
                         subNode.widget = this
@@ -86,6 +110,16 @@
             if target instanceof Leaf.Widget
                 for node in @nodes
                     target.node.appendChild(node)
+        replace:(target)->
+            @before target
+            if target instanceof Leaf.Widget
+                target.remove()
+                return
+            if Util.isHTMLElement(target) and target.parentElement
+                target.parentElement.removeChild target
+                return
+                
+                
         prependTo:(target)-> 
             if Util.isHTMLElement(target)
                 target = target

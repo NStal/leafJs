@@ -191,6 +191,8 @@
     Key.escape = 27;
     Key.del = Key["delete"] = 46;
     Key.esc = 27;
+    Key.pageup = 33;
+    Key.pagedown = 34;
     Key.tab = 9;
     Util.Key = Key;
     Leaf.Util = Util;
@@ -234,14 +236,24 @@
         }
         this.nodes = [];
         if (typeof template === "string") {
-          tempNode = document.createElement("div");
-          tempNode.innerHTML = template.trim();
-          this.node = tempNode.children[0];
-          _ref = tempNode.children;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            node = _ref[_i];
-            this.nodes.push(node);
-            node.widget = this;
+          if ((template.indexOf("#")) === 0) {
+            this.node = document.getElementById(template.substring(1));
+            if (!this.node) {
+              console.error("template of id", template.substring(1), "not found");
+              return;
+            }
+            this.nodes = [this.node];
+            this.node.widget = this;
+          } else {
+            tempNode = document.createElement("div");
+            tempNode.innerHTML = template.trim();
+            this.node = tempNode.children[0];
+            _ref = tempNode.children;
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              node = _ref[_i];
+              this.nodes.push(node);
+              node.widget = this;
+            }
           }
         } else if (Util.isHTMLNode(template)) {
           this.node = template;
@@ -256,12 +268,47 @@
           this.node$ = this.$node;
         }
         this.initUI();
-        this.emit("ready");
+        this.initSubWidgets();
         return Widget.emit("widget", this);
       };
 
+      Widget.prototype.initSubWidgets = function() {
+        var index, item, name, node, widget, widgets, _i, _j, _len, _len1, _ref, _results, _widgets;
+        _ref = this.nodes;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          node = _ref[_i];
+          widgets = node.getElementsByTagName("widget");
+          _widgets = [];
+          for (_j = 0, _len1 = widgets.length; _j < _len1; _j++) {
+            item = widgets[_j];
+            _widgets.push(item);
+          }
+          widgets = _widgets;
+          _results.push((function() {
+            var _k, _len2, _results1;
+            _results1 = [];
+            for (index = _k = 0, _len2 = widgets.length; _k < _len2; index = ++_k) {
+              widget = widgets[index];
+              name = widget.getAttribute("data-widget");
+              if (!name) {
+                continue;
+              }
+              if (this[name] instanceof Widget) {
+                _results1.push(this[name].replace(widget));
+              } else {
+                console.error("Widget named", name, "not exists for", widget);
+                _results1.push(console.trace());
+              }
+            }
+            return _results1;
+          }).call(this));
+        }
+        return _results;
+      };
+
       Widget.prototype.initUI = function() {
-        var elems, id, node, subNode, _i, _j, _len, _len1, _ref;
+        var elem, elems, id, node, subNode, _elems, _i, _j, _k, _len, _len1, _len2, _ref;
         if (!this.nodes) {
           throw "invalid root " + this.nodes;
         }
@@ -269,17 +316,17 @@
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           node = _ref[_i];
           elems = node.getElementsByTagName("*");
-          subNode = node;
-          if (id = subNode.getAttribute("data-id")) {
-            this.UI[id] = subNode;
-            subNode.widget = this;
-            this._delegateEventForControl(id);
-            if (typeof $ === "function") {
-              this.UI[id + "$"] = this.UI["$" + id] = $(subNode);
-            }
-          }
+          _elems = [node];
           for (_j = 0, _len1 = elems.length; _j < _len1; _j++) {
-            subNode = elems[_j];
+            elem = elems[_j];
+            _elems.push(elem);
+          }
+          elems = _elems;
+          for (_k = 0, _len2 = elems.length; _k < _len2; _k++) {
+            subNode = elems[_k];
+            if (subNode.tagName.toLowerCase() === "widget") {
+              continue;
+            }
             if (id = subNode.getAttribute("data-id")) {
               this.UI[id] = subNode;
               subNode.widget = this;
@@ -336,6 +383,17 @@
             _results.push(target.node.appendChild(node));
           }
           return _results;
+        }
+      };
+
+      Widget.prototype.replace = function(target) {
+        this.before(target);
+        if (target instanceof Leaf.Widget) {
+          target.remove();
+          return;
+        }
+        if (Util.isHTMLElement(target) && target.parentElement) {
+          target.parentElement.removeChild(target);
         }
       };
 
@@ -466,7 +524,7 @@
           this.templates[tid] = all[tid];
         }
         if (this._isRequirementComplete()) {
-          this.emit("ready", this.templates);
+          this._ready();
           return this;
         }
         remain = this._getNotCompleteRequirements();
@@ -476,7 +534,7 @@
           this.templates[tid] = remainTemplates[tid];
         }
         if (this._isRequirementComplete()) {
-          this.emit("ready", this.templates);
+          this._ready();
           return this;
         }
         remain = this._getNotCompleteRequirements();
@@ -487,9 +545,13 @@
           }
           _this.templates[tid] = template;
           if (_this._isRequirementComplete()) {
-            return _this.emit("ready", _this.templates);
+            return _this._ready();
           }
         });
+      };
+
+      TemplateManager.prototype._ready = function() {
+        return this.emit("ready", this.templates);
       };
 
       TemplateManager.prototype._getNotCompleteRequirements = function() {
@@ -539,12 +601,12 @@
       };
 
       TemplateManager.prototype._fromXHRForEach = function(tids, callback) {
-        var tid, _fn, _i, _len,
+        var targetURI, tid, _fn, _i, _len,
           _this = this;
         _fn = function() {
           var XHR;
           XHR = new XMLHttpRequest();
-          XHR.open("GET", _this.baseUrl + tid + _this.suffix, true);
+          XHR.open("GET", targetURI, true);
           XHR.send(null);
           XHR.tid = tid;
           XHR.terminator = setTimeout(function() {
@@ -569,6 +631,11 @@
         };
         for (_i = 0, _len = tids.length; _i < _len; _i++) {
           tid = tids[_i];
+          if (tid.indexOf(".") >= 1) {
+            targetURI = this.baseUrl + tid;
+          } else {
+            targetURI = this.baseUrl + tid + this.suffix;
+          }
           _fn();
         }
         return null;
@@ -623,6 +690,9 @@
         return function() {
           var body, callback, hasValue, holderIndex, i, index, lastIndex, params, placeHolder, placeHoldersValue, url, xhr, _i, _index, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3, _ref4;
           params = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+          params = params.map(function(value) {
+            return encodeURIComponent(value);
+          });
           placeHoldersValue = [];
           if (params.length === component.placeHolders.length && (((_ref = typeof params[0]) === "undefined" || _ref === "number" || _ref === "string") || params[0] instanceof String)) {
             placeHoldersValue = params;

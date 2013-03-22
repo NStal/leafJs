@@ -16,6 +16,8 @@
             this[component.name] = @_createApiByComponent(component)
         _createApiByComponent:(component)->
             return (params...)=>
+                params = params.map (value)->
+                    return encodeURIComponent(value)
                 placeHoldersValue = []
                 # check params
                 # using arguments as placeholder?

@@ -185,6 +185,8 @@
     Key.escape = 27;
     Key.del = Key["delete"] = 46;
     Key.esc = 27;
+    Key.pageup = 33;
+    Key.pagedown = 34;
     Key.tab = 9;
     Util.Key = Key;
     Leaf.Util = Util;
