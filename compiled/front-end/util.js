@@ -71,7 +71,19 @@
       KeyEventManager.prototype.attachTo = function(node) {
         var _this = this;
         this.attachment = node;
-        return $(this.attachment).keydown(function(e) {
+        $(this.attachment).keydown(function(e) {
+          e.capture = function() {
+            this.catchEvent = false;
+            this.preventDefault();
+            return this.stopImmediatePropagation();
+          };
+          if (_this.isActive && KeyEventManager.isActive) {
+            _this.emit("keydown", e);
+            return e.catchEvent;
+          }
+          return e.catchEvent;
+        });
+        return $(this.attachment).keyup(function(e) {
           e.capture = function() {
             this.catchEvent = false;
             this.preventDefault();

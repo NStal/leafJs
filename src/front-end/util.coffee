@@ -51,6 +51,15 @@
                     @emit "keydown",e
                     return e.catchEvent
                 return e.catchEvent
+            $(@attachment).keyup (e)=>
+                e.capture = ()->
+                    @catchEvent = false
+                    @preventDefault()
+                    @stopImmediatePropagation()
+                if @isActive and KeyEventManager.isActive
+                    @emit "keydown",e
+                    return e.catchEvent
+                return e.catchEvent
         active:()->
             @isActive = true
         deactive:()->

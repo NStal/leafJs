@@ -11,7 +11,6 @@
         use: (tids...) ->
             @tids.push.apply @tids,tids
             this
-
         start:() ->
             all = @_fromDomAll()
             for tid in @tids
