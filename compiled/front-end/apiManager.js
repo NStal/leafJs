@@ -20,16 +20,15 @@
       }
 
       ApiManager.prototype.declare = function() {
-        var api, apis, _i, _len;
+        var apis;
         apis = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-        for (_i = 0, _len = apis.length; _i < _len; _i++) {
-          api = apis[_i];
-          this.initApi(api);
+        if (apis.length === 1 && typeof apis[0] === "string") {
+          this.initApiByText(apis[0]);
         }
         return this;
       };
 
-      ApiManager.prototype.initApi = function(apiDeclare) {
+      ApiManager.prototype.initApiByText = function(apiDeclare) {
         var component;
         component = this._extractApiComponent(apiDeclare);
         return this[component.name] = this._createApiByComponent(component);
@@ -38,10 +37,13 @@
       ApiManager.prototype._createApiByComponent = function(component) {
         var _this = this;
         return function() {
-          var body, callback, hasValue, holderIndex, i, index, lastIndex, params, placeHolder, placeHoldersValue, url, xhr, _i, _index, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3, _ref4;
+          var body, callback, hasValue, holderIndex, i, index, lastIndex, params, placeHolder, placeHoldersValue, promise, url, xhr, _i, _index, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3, _ref4;
           params = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
           params = params.map(function(value) {
-            return encodeURIComponent(value);
+            if (typeof value === "string") {
+              return encodeURIComponent(value);
+            }
+            return value;
           });
           placeHoldersValue = [];
           if (params.length === component.placeHolders.length && (((_ref = typeof params[0]) === "undefined" || _ref === "number" || _ref === "string") || params[0] instanceof String)) {
@@ -127,22 +129,74 @@
           lastIndex = 0;
           callback = null;
           xhr = new XMLHttpRequest;
+          promise = {
+            success: function(callback) {
+              console.assert(typeof callback === "function");
+              this._success = callback;
+              return this;
+            },
+            fail: function(callback) {
+              console.assert(typeof callback === "function");
+              this._fail = callback;
+              return this;
+            },
+            response: function(callback) {
+              console.assert(typeof callback === "function");
+              this._response = callback;
+              return this;
+            },
+            timeout: function(count) {
+              console.assert(typeof count === "number");
+              this._timeout = count;
+              return this;
+            }
+          };
           xhr.onreadystatechange = function(state) {
             var json, _ref5;
-            if (xhr.readyState === 4 && callback) {
+            if (xhr.readyState === 4) {
               if (_ref5 = xhr.status, __indexOf.call(_this.acceptStatus, _ref5) < 0) {
-                callback({
-                  code: xhr.status
-                }, null);
+                if (promise._fail) {
+                  promise._fail({
+                    code: xhr.status
+                  }, null);
+                }
+                if (promise._response) {
+                  promise._response({
+                    error: "Invalid Http Code",
+                    code: xhr.status
+                  }, null);
+                }
                 return;
               }
               if (xhr.getResponseHeader("content-type") === "text/json") {
                 try {
                   json = JSON.parse(xhr.responseText);
                 } catch (e) {
-                  callback("BROKEN JSON;", xhr.responseText);
+                  if (promise._fail) {
+                    promise._fail("Broken Json", {
+                      responseText: xhr.responseText
+                    });
+                  }
+                  if (promise._response) {
+                    promise._response(null, {
+                      error: "Broken Json",
+                      responseText: xhr.responseText
+                    });
+                  }
                 }
-                return callback(null, json);
+                json.responseText = xhr.responseText;
+                if (json.state) {
+                  if (promise._success) {
+                    promise._success(json.data);
+                  }
+                } else {
+                  if (promise._fail) {
+                    promise._fail(json.error || "Unknown Error", json);
+                  }
+                }
+                if (promise._response) {
+                  return promise._response(null, json);
+                }
               } else {
                 return callback(null, xhr.responseText);
               }
@@ -151,11 +205,7 @@
           xhr.open(component.method, url, true);
           xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
           xhr.send(body);
-          return {
-            response: function(_callback) {
-              return callback = _callback;
-            }
-          };
+          return promise;
         };
       };
 

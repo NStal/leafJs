@@ -140,7 +140,7 @@
       Widget.prototype._delegateEventForControl = function(id) {
         var event, events, node, _i, _len, _results,
           _this = this;
-        events = ["blur", "click", "focus", "keydown", "keyup", "keypress"];
+        events = ["blur", "click", "focus", "keydown", "keyup", "keypress", "mousemove", "mouseenter", "mouseleave", "mouseover", "mouseout"];
         node = this.UI[id];
         if (!node) {
           node = this.node;
@@ -233,6 +233,40 @@
         return this.emit("remove");
       };
 
+      Widget.prototype.after = function(target) {
+        var node, _i, _j, _len, _len1, _ref, _ref1, _results, _results1;
+        if (Util.isHTMLElement(target)) {
+          target = target;
+        } else if (target instanceof Leaf.Widget) {
+          target = target.node;
+        } else {
+          console.error("Insert unknow Object", target);
+          return false;
+        }
+        if (!target || !target.parentElement) {
+          console.log(target, target.parentElement);
+          console.error("can't insert befere root element ");
+          return false;
+        }
+        if (target.nextElementSibling) {
+          _ref = this.nodes;
+          _results = [];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            node = _ref[_i];
+            _results.push(target.parentElement.insertBefore(node, target.nextElementSibling));
+          }
+          return _results;
+        } else {
+          _ref1 = this.nodes;
+          _results1 = [];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            node = _ref1[_j];
+            _results1.push(target.parentElement.appendChild(node));
+          }
+          return _results1;
+        }
+      };
+
       Widget.prototype.before = function(target) {
         var node, _i, _len, _ref;
         if (Util.isHTMLElement(target)) {
@@ -269,7 +303,7 @@
 
       return Widget;
 
-    })(Leaf.EventEmitter);
+    })(Leaf.Observable);
     Widget.Event = new Leaf.EventEmitter();
     Widget.on = function() {
       return this.Event.on.apply(this.Event, arguments);

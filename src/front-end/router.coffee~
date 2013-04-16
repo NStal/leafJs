@@ -1,0 +1,6 @@
+((Leaf)->
+    class Router extends Leaf.EventEmitter
+        constructor:()->
+    class Route extends Leaf.EventEmitter
+    Leaf.Router = Router
+)(this.Leaf)

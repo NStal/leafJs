@@ -5,7 +5,7 @@
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   (function(Leaf) {
-    var EventEmitter, Key, KeyEventManager, Util;
+    var EventEmitter, Key, KeyEventManager, Mouse, Observable, Util;
     EventEmitter = (function() {
 
       function EventEmitter() {
@@ -54,6 +54,28 @@
     Util.isHTMLNode = function(o) {
       return (typeof Node === "object" && o instanceof Node) || o && typeof o === "object" && typeof o.nodeType === "number" && typeof o.nodeName === "string";
     };
+    Util.isMobile = function() {
+      if (navigator && navigator.userAgent) {
+        return (navigator.userAgent.match(/Android/i) || navigator.userAgent.match(/webOS/i) || navigator.userAgent.match(/iPhone/i) || navigator.userAgent.match(/iPad/i) || navigator.userAgent.match(/iPod/i) || navigator.userAgent.match(/BlackBerry/i) || navigator.userAgent.match(/Windows Phone/i)) && true;
+      } else {
+        return false;
+      }
+    };
+    Util.getBrowserInfo = function() {
+      var M, N, tem, ua;
+      N = navigator.appName;
+      ua = navigator.userAgent;
+      M = ua.match(/(opera|chrome|safari|firefox|msie)\/?\s*(\.?\d+(\.\d+)*)/i);
+      tem = ua.match(/version\/([\.\d]+)/i);
+      if (M && tem !== null) {
+        M[2] = tem[1];
+      }
+      M = M ? [M[1],M[2]] : [N, navigator.appVersion, '-?'];
+      return {
+        name: M[0],
+        version: M[1]
+      };
+    };
     Util.capitalize = function(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
     };
@@ -90,7 +112,7 @@
             return this.stopImmediatePropagation();
           };
           if (_this.isActive && KeyEventManager.isActive) {
-            _this.emit("keydown", e);
+            _this.emit("keyup", e);
             return e.catchEvent;
           }
           return e.catchEvent;
@@ -138,6 +160,77 @@
       return KeyEventManager;
 
     })(EventEmitter);
+    Observable = (function(_super) {
+
+      __extends(Observable, _super);
+
+      function Observable() {
+        Observable.__super__.constructor.call(this);
+      }
+
+      Observable.prototype.watch = function(property, callback) {};
+
+      return Observable;
+
+    })(EventEmitter);
+    Util.clone = function(x) {
+      var item, r, _i, _len;
+      if (x === null || x === void 0) {
+        return x;
+      }
+      if (typeof x.clone === "function") {
+        return x.clone();
+      }
+      if (x.constructor === Array) {
+        r = [];
+        for (_i = 0, _len = x.length; _i < _len; _i++) {
+          item = x[_i];
+          r.push(Util.clone(item));
+        }
+        return r;
+      }
+      return x;
+    };
+    Util.compare = function(x, y) {
+      var p, _i, _len;
+      if (x === y) {
+        return true;
+      }
+      for (p in y) {
+        if (typeof x[p] === 'undefined') {
+          return false;
+        }
+      }
+      for (p in y) {
+        if (y[p]) {
+          switch (typeof y[p]) {
+            case 'object':
+              if (!Util.compare(y[p], x[p])) {
+                return false;
+              }
+              break;
+            case 'function':
+              if (typeof x[p] === 'undefined' || (p !== 'equals' && y[p].toString() !== x[p].toString())) {
+                return false;
+              }
+              break;
+            default:
+              if (y[p] !== x[p]) {
+                return false;
+              }
+          }
+        } else if (x[p]) {
+          return false;
+        }
+      }
+      for (_i = 0, _len = x.length; _i < _len; _i++) {
+        p = x[_i];
+        if (typeof y[p] === 'undefined') {
+          return false;
+        }
+      }
+      return true;
+    };
     KeyEventManager.instances = [];
     KeyEventManager.stack = [];
     KeyEventManager.disable = function() {
@@ -200,10 +293,16 @@
     Key.pageup = 33;
     Key.pagedown = 34;
     Key.tab = 9;
+    Mouse = {};
+    Mouse.left = 0;
+    Mouse.middle = 1;
+    Mouse.right = 2;
     Util.Key = Key;
     Leaf.Util = Util;
     Leaf.Key = Key;
+    Leaf.Mouse = Mouse;
     Leaf.EventEmitter = EventEmitter;
+    Leaf.Observable = Observable;
     return Leaf.KeyEventManager = KeyEventManager;
   })(this.Leaf);
 

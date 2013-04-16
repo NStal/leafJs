@@ -1,4 +1,4 @@
-((Leaf)->
+((Leaf)-> 
     class ApiManager extends Leaf.EventEmitter
         constructor:(apis)->
             @apis = {}
@@ -8,16 +8,19 @@
             @acceptStatus = [200]
             #pass
         declare:(apis...)->
-            for api in apis
-                @initApi(api)
+            if apis.length is 1 and typeof apis[0] is "string"
+                this.initApiByText(apis[0])
+            
             return this
-        initApi:(apiDeclare)->
+        initApiByText:(apiDeclare)->
             component = @_extractApiComponent(apiDeclare)
             this[component.name] = @_createApiByComponent(component)
         _createApiByComponent:(component)->
             return (params...)=>
                 params = params.map (value)->
-                    return encodeURIComponent(value)
+                    if typeof value is "string"
+                        return encodeURIComponent(value)
+                    return value
                 placeHoldersValue = []
                 # check params
                 # using arguments as placeholder?
@@ -90,27 +93,55 @@
                 lastIndex = 0
                 callback = null
                 xhr = new XMLHttpRequest
+                promise = {
+                    success:(callback)->
+                        console.assert typeof callback is "function"
+                        this._success = callback
+                        return this
+                    ,fail:(callback)->
+                        console.assert typeof callback is "function"
+                        this._fail = callback
+                        return this
+                    ,response:(callback)->
+                        console.assert typeof callback is "function"
+                        this._response = callback
+                        return this
+                    ,timeout:(count)->
+                        console.assert typeof count is "number"
+                        this._timeout = count
+                        return this
+                }
                 xhr.onreadystatechange = (state)=>
-                    if xhr.readyState == 4 && callback
-                        
+                    if xhr.readyState == 4
                         if xhr.status not in @acceptStatus
-                            callback({code:xhr.status},null)
+                            if promise._fail
+                                promise._fail({code:xhr.status},null)
+                            if promise._response
+                                promise._response({error:"Invalid Http Code",code:xhr.status},null)
                             return
                         if xhr.getResponseHeader("content-type") == "text/json" 
                             try
                                 json = JSON.parse(xhr.responseText)
                             catch e
-                                callback("BROKEN JSON;",xhr.responseText);
-                            callback(null,json) 
-   
+                                if promise._fail
+                                    promise._fail("Broken Json",{responseText:xhr.responseText})
+                                if promise._response
+                                    promise._response(null,{error:"Broken Json",responseText:xhr.responseText})
+                            json.responseText = xhr.responseText
+                            if json.state
+                                if promise._success
+                                    promise._success(json.data)
+                            else
+                                if promise._fail
+                                    promise._fail(json.error or "Unknown Error",json)
+                             if promise._response
+                                promise._response(null,json)
                         else
                             callback(null,xhr.responseText);
                 xhr.open(component.method,url,true) 
                 xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
                 xhr.send(body)
-                return {
-                    response:(_callback) -> callback = _callback
-                    }
+                return promise
         _extractApiComponent:(apiDeclare)->
             regName = /^\w*/i
             regUrl = /@[\w:?&=\-+\.\/{}]+/i

@@ -22,8 +22,7 @@
       TemplateManager.prototype.use = function() {
         var tids;
         tids = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-        this.tids.push.apply(this.tids, tids);
-        return this;
+        return this.tids.push.apply(this.tids, tids);
       };
 
       TemplateManager.prototype.start = function() {
@@ -104,9 +103,7 @@
         templates = {};
         for (_i = 0, _len = tids.length; _i < _len; _i++) {
           tid = tids[_i];
-          templateNode = document.getElementById("leaf-templates-" + {
-            tid: tid
-          });
+          templateNode = document.getElementById("leaf-templates-" + tid);
           templates[tid] = templateNode ? templateNode.innerHTML : void 0;
         }
         return templates;

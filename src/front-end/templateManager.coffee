@@ -10,7 +10,6 @@
             @timeout = 10000 #default timeout
         use: (tids...) ->
             @tids.push.apply @tids,tids
-            this
         start:() ->
             all = @_fromDomAll()
             for tid in @tids
@@ -57,7 +56,7 @@
         _fromDomForEach:(tids)->
             templates = {}
             for tid in tids
-                templateNode = document.getElementById("leaf-templates-#{{tid}}");
+                templateNode = document.getElementById("leaf-templates-#{tid}");
                 templates[tid] = if templateNode then templateNode.innerHTML else undefined
             templates
         #callback err,tid,

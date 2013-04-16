@@ -11,7 +11,7 @@
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   (function(Leaf) {
-    var EventEmitter, Key, KeyEventManager, Util;
+    var EventEmitter, Key, KeyEventManager, Mouse, Observable, Util;
     EventEmitter = (function() {
 
       function EventEmitter() {
@@ -60,6 +60,28 @@
     Util.isHTMLNode = function(o) {
       return (typeof Node === "object" && o instanceof Node) || o && typeof o === "object" && typeof o.nodeType === "number" && typeof o.nodeName === "string";
     };
+    Util.isMobile = function() {
+      if (navigator && navigator.userAgent) {
+        return (navigator.userAgent.match(/Android/i) || navigator.userAgent.match(/webOS/i) || navigator.userAgent.match(/iPhone/i) || navigator.userAgent.match(/iPad/i) || navigator.userAgent.match(/iPod/i) || navigator.userAgent.match(/BlackBerry/i) || navigator.userAgent.match(/Windows Phone/i)) && true;
+      } else {
+        return false;
+      }
+    };
+    Util.getBrowserInfo = function() {
+      var M, N, tem, ua;
+      N = navigator.appName;
+      ua = navigator.userAgent;
+      M = ua.match(/(opera|chrome|safari|firefox|msie)\/?\s*(\.?\d+(\.\d+)*)/i);
+      tem = ua.match(/version\/([\.\d]+)/i);
+      if (M && tem !== null) {
+        M[2] = tem[1];
+      }
+      M = M ? [M[1],M[2]] : [N, navigator.appVersion, '-?'];
+      return {
+        name: M[0],
+        version: M[1]
+      };
+    };
     Util.capitalize = function(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
     };
@@ -96,7 +118,7 @@
             return this.stopImmediatePropagation();
           };
           if (_this.isActive && KeyEventManager.isActive) {
-            _this.emit("keydown", e);
+            _this.emit("keyup", e);
             return e.catchEvent;
           }
           return e.catchEvent;
@@ -144,6 +166,77 @@
       return KeyEventManager;
 
     })(EventEmitter);
+    Observable = (function(_super) {
+
+      __extends(Observable, _super);
+
+      function Observable() {
+        Observable.__super__.constructor.call(this);
+      }
+
+      Observable.prototype.watch = function(property, callback) {};
+
+      return Observable;
+
+    })(EventEmitter);
+    Util.clone = function(x) {
+      var item, r, _i, _len;
+      if (x === null || x === void 0) {
+        return x;
+      }
+      if (typeof x.clone === "function") {
+        return x.clone();
+      }
+      if (x.constructor === Array) {
+        r = [];
+        for (_i = 0, _len = x.length; _i < _len; _i++) {
+          item = x[_i];
+          r.push(Util.clone(item));
+        }
+        return r;
+      }
+      return x;
+    };
+    Util.compare = function(x, y) {
+      var p, _i, _len;
+      if (x === y) {
+        return true;
+      }
+      for (p in y) {
+        if (typeof x[p] === 'undefined') {
+          return false;
+        }
+      }
+      for (p in y) {
+        if (y[p]) {
+          switch (typeof y[p]) {
+            case 'object':
+              if (!Util.compare(y[p], x[p])) {
+                return false;
+              }
+              break;
+            case 'function':
+              if (typeof x[p] === 'undefined' || (p !== 'equals' && y[p].toString() !== x[p].toString())) {
+                return false;
+              }
+              break;
+            default:
+              if (y[p] !== x[p]) {
+                return false;
+              }
+          }
+        } else if (x[p]) {
+          return false;
+        }
+      }
+      for (_i = 0, _len = x.length; _i < _len; _i++) {
+        p = x[_i];
+        if (typeof y[p] === 'undefined') {
+          return false;
+        }
+      }
+      return true;
+    };
     KeyEventManager.instances = [];
     KeyEventManager.stack = [];
     KeyEventManager.disable = function() {
@@ -206,10 +299,16 @@
     Key.pageup = 33;
     Key.pagedown = 34;
     Key.tab = 9;
+    Mouse = {};
+    Mouse.left = 0;
+    Mouse.middle = 1;
+    Mouse.right = 2;
     Util.Key = Key;
     Leaf.Util = Util;
     Leaf.Key = Key;
+    Leaf.Mouse = Mouse;
     Leaf.EventEmitter = EventEmitter;
+    Leaf.Observable = Observable;
     return Leaf.KeyEventManager = KeyEventManager;
   })(this.Leaf);
 
@@ -356,7 +455,7 @@
       Widget.prototype._delegateEventForControl = function(id) {
         var event, events, node, _i, _len, _results,
           _this = this;
-        events = ["blur", "click", "focus", "keydown", "keyup", "keypress"];
+        events = ["blur", "click", "focus", "keydown", "keyup", "keypress", "mousemove", "mouseenter", "mouseleave", "mouseover", "mouseout"];
         node = this.UI[id];
         if (!node) {
           node = this.node;
@@ -449,6 +548,40 @@
         return this.emit("remove");
       };
 
+      Widget.prototype.after = function(target) {
+        var node, _i, _j, _len, _len1, _ref, _ref1, _results, _results1;
+        if (Util.isHTMLElement(target)) {
+          target = target;
+        } else if (target instanceof Leaf.Widget) {
+          target = target.node;
+        } else {
+          console.error("Insert unknow Object", target);
+          return false;
+        }
+        if (!target || !target.parentElement) {
+          console.log(target, target.parentElement);
+          console.error("can't insert befere root element ");
+          return false;
+        }
+        if (target.nextElementSibling) {
+          _ref = this.nodes;
+          _results = [];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            node = _ref[_i];
+            _results.push(target.parentElement.insertBefore(node, target.nextElementSibling));
+          }
+          return _results;
+        } else {
+          _ref1 = this.nodes;
+          _results1 = [];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            node = _ref1[_j];
+            _results1.push(target.parentElement.appendChild(node));
+          }
+          return _results1;
+        }
+      };
+
       Widget.prototype.before = function(target) {
         var node, _i, _len, _ref;
         if (Util.isHTMLElement(target)) {
@@ -485,7 +618,7 @@
 
       return Widget;
 
-    })(Leaf.EventEmitter);
+    })(Leaf.Observable);
     Widget.Event = new Leaf.EventEmitter();
     Widget.on = function() {
       return this.Event.on.apply(this.Event, arguments);
@@ -522,8 +655,7 @@
       TemplateManager.prototype.use = function() {
         var tids;
         tids = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-        this.tids.push.apply(this.tids, tids);
-        return this;
+        return this.tids.push.apply(this.tids, tids);
       };
 
       TemplateManager.prototype.start = function() {
@@ -604,9 +736,7 @@
         templates = {};
         for (_i = 0, _len = tids.length; _i < _len; _i++) {
           tid = tids[_i];
-          templateNode = document.getElementById("leaf-templates-" + {
-            tid: tid
-          });
+          templateNode = document.getElementById("leaf-templates-" + tid);
           templates[tid] = templateNode ? templateNode.innerHTML : void 0;
         }
         return templates;
@@ -682,16 +812,15 @@
       }
 
       ApiManager.prototype.declare = function() {
-        var api, apis, _i, _len;
+        var apis;
         apis = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-        for (_i = 0, _len = apis.length; _i < _len; _i++) {
-          api = apis[_i];
-          this.initApi(api);
+        if (apis.length === 1 && typeof apis[0] === "string") {
+          this.initApiByText(apis[0]);
         }
         return this;
       };
 
-      ApiManager.prototype.initApi = function(apiDeclare) {
+      ApiManager.prototype.initApiByText = function(apiDeclare) {
         var component;
         component = this._extractApiComponent(apiDeclare);
         return this[component.name] = this._createApiByComponent(component);
@@ -700,10 +829,13 @@
       ApiManager.prototype._createApiByComponent = function(component) {
         var _this = this;
         return function() {
-          var body, callback, hasValue, holderIndex, i, index, lastIndex, params, placeHolder, placeHoldersValue, url, xhr, _i, _index, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3, _ref4;
+          var body, callback, hasValue, holderIndex, i, index, lastIndex, params, placeHolder, placeHoldersValue, promise, url, xhr, _i, _index, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3, _ref4;
           params = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
           params = params.map(function(value) {
-            return encodeURIComponent(value);
+            if (typeof value === "string") {
+              return encodeURIComponent(value);
+            }
+            return value;
           });
           placeHoldersValue = [];
           if (params.length === component.placeHolders.length && (((_ref = typeof params[0]) === "undefined" || _ref === "number" || _ref === "string") || params[0] instanceof String)) {
@@ -789,22 +921,74 @@
           lastIndex = 0;
           callback = null;
           xhr = new XMLHttpRequest;
+          promise = {
+            success: function(callback) {
+              console.assert(typeof callback === "function");
+              this._success = callback;
+              return this;
+            },
+            fail: function(callback) {
+              console.assert(typeof callback === "function");
+              this._fail = callback;
+              return this;
+            },
+            response: function(callback) {
+              console.assert(typeof callback === "function");
+              this._response = callback;
+              return this;
+            },
+            timeout: function(count) {
+              console.assert(typeof count === "number");
+              this._timeout = count;
+              return this;
+            }
+          };
           xhr.onreadystatechange = function(state) {
             var json, _ref5;
-            if (xhr.readyState === 4 && callback) {
+            if (xhr.readyState === 4) {
               if (_ref5 = xhr.status, __indexOf.call(_this.acceptStatus, _ref5) < 0) {
-                callback({
-                  code: xhr.status
-                }, null);
+                if (promise._fail) {
+                  promise._fail({
+                    code: xhr.status
+                  }, null);
+                }
+                if (promise._response) {
+                  promise._response({
+                    error: "Invalid Http Code",
+                    code: xhr.status
+                  }, null);
+                }
                 return;
               }
               if (xhr.getResponseHeader("content-type") === "text/json") {
                 try {
                   json = JSON.parse(xhr.responseText);
                 } catch (e) {
-                  callback("BROKEN JSON;", xhr.responseText);
+                  if (promise._fail) {
+                    promise._fail("Broken Json", {
+                      responseText: xhr.responseText
+                    });
+                  }
+                  if (promise._response) {
+                    promise._response(null, {
+                      error: "Broken Json",
+                      responseText: xhr.responseText
+                    });
+                  }
                 }
-                return callback(null, json);
+                json.responseText = xhr.responseText;
+                if (json.state) {
+                  if (promise._success) {
+                    promise._success(json.data);
+                  }
+                } else {
+                  if (promise._fail) {
+                    promise._fail(json.error || "Unknown Error", json);
+                  }
+                }
+                if (promise._response) {
+                  return promise._response(null, json);
+                }
               } else {
                 return callback(null, xhr.responseText);
               }
@@ -813,11 +997,7 @@
           xhr.open(component.method, url, true);
           xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
           xhr.send(body);
-          return {
-            response: function(_callback) {
-              return callback = _callback;
-            }
-          };
+          return promise;
         };
       };
 
@@ -881,6 +1061,417 @@
 
     })(Leaf.EventEmitter);
     return Leaf.ApiManager = ApiManager;
+  })(this.Leaf);
+
+}).call(this);
+// Generated by CoffeeScript 1.4.0
+(function() {
+  var Leaf,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    __slice = [].slice,
+    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+
+  Leaf = window.Leaf;
+
+  (function(Leaf) {
+    var Api, ApiContext, ApiFactory, Request;
+    ApiFactory = (function(_super) {
+
+      __extends(ApiFactory, _super);
+
+      function ApiFactory(apis) {
+        this.apis = {};
+        this.path = "api/";
+        this.suffix = "";
+        this.defaultMethod = "GET";
+        this.acceptStatus = [200];
+        this.infos = [];
+      }
+
+      ApiFactory.prototype.declare = function(name, params, option) {
+        var info, method, url;
+        if (option == null) {
+          option = {};
+        }
+        console.assert(typeof name === "string");
+        url = option.url || ("" + this.path + name + this.suffix);
+        method = option.method || this.defaultMethod;
+        params = params instanceof Array && params || [];
+        info = {
+          name: name,
+          url: url,
+          method: method,
+          params: params
+        };
+        this.infos.push(info);
+        return this;
+      };
+
+      ApiFactory.prototype.build = function() {
+        var api, info, _i, _len, _ref;
+        api = {};
+        _ref = this.infos;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          info = _ref[_i];
+          api[info.name] = new Api(info).toFunction();
+        }
+        return api;
+      };
+
+      return ApiFactory;
+
+    })(Leaf.EventEmitter);
+    Api = (function() {
+
+      function Api(info) {
+        this.info = info;
+        this.declares = this.buildDeclares();
+        this.method = this.info.method.toUpperCase();
+        this.name = this.info.name;
+        this.url = this.info.url;
+      }
+
+      Api.prototype.buildDeclares = function() {
+        var declare, declares, param, paramInfo, paramName, shouldBe, _i, _len, _ref;
+        declares = [];
+        _ref = this.info.params;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          param = _ref[_i];
+          paramInfo = param.split(":").filter(function(value) {
+            return value;
+          });
+          paramName = paramInfo[0];
+          shouldBe = paramInfo[1] || "string";
+          declare = {
+            name: paramName,
+            optional: false
+          };
+          if (shouldBe.lastIndexOf("?") === (shouldBe.length - 1)) {
+            declare.optional = true;
+          }
+          shouldBe = shouldBe.replace(/\?/g, "");
+          if (shouldBe === "string") {
+            declare.format = "string";
+          } else if (shouldBe === "number") {
+            declare.format = "number";
+          } else if (shouldBe.length === 0) {
+            declare.format = "string";
+          } else {
+            throw new Error("Unknow Format Declaration In API " + this.info.name + ":" + shouldBe);
+          }
+          declares.push(declare);
+        }
+        return declares;
+      };
+
+      Api.prototype.checkParam = function(value, declare) {
+        var number;
+        if (typeof value !== "number" && !value) {
+          if (declare.optional) {
+            return "";
+          } else {
+            throw new Error("API:" + this.info.name + "'s parameter:" + declare.name + " is required but given:" + value);
+          }
+        }
+        if (typeof value === "number" && isNaN(value)) {
+          throw new Error("API " + this.info.name + " parameter:" + declare.name + " recieve an NaN");
+        }
+        if (typeof value === declare.format) {
+          return value;
+        }
+        if (typeof value === "number" && declare.format === "string") {
+          console.warn("change param" + declare.name + " of API " + this.info.name + " from number to string");
+          return value.toString();
+        }
+        if (typeof value === "string" && declare === "number") {
+          number = parseFloat(value);
+          if (isNaN(number)) {
+            throw new Error("API " + this.info.name + " parameter:" + declare.name + " require an number but given an string");
+          } else {
+            console.warn("change param" + declare.name + " of API " + this.info.name + " from string to number");
+            return value;
+          }
+        }
+      };
+
+      Api.prototype.checkParams = function(params) {
+        var declare, index, _i, _j, _len, _len1, _ref, _ref1, _result;
+        if (params.length === 1 && typeof params === "object") {
+          _ref = this.declares;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            declare = _ref[_i];
+            params[declare.name] = encodeURIComponent(this.checkParam(params[declare.name], declare));
+          }
+          return params;
+        } else {
+          _result = {};
+          _ref1 = this.declares;
+          for (index = _j = 0, _len1 = _ref1.length; _j < _len1; index = ++_j) {
+            declare = _ref1[index];
+            _result[declare.name] = this.checkParam(params[index], declare);
+          }
+          return _result;
+        }
+      };
+
+      Api.prototype.buildRequest = function(paramsDict) {
+        var URI, body, key, query, queryArray, _ref;
+        queryArray = [];
+        for (key in paramsDict) {
+          queryArray.push([key, paramsDict[key]].join("="));
+        }
+        query = queryArray.join("&");
+        URI = "";
+        body = "";
+        if ((_ref = this.method) === "GET" || _ref === "DELETE" || _ref === "PUT") {
+          URI = "" + this.url + "?" + query;
+        } else if (this.method === "POST") {
+          URI = this.url;
+          body = query;
+        } else {
+          console.warn("Unknow Method " + this.method + ",build as if it is GET");
+        }
+        return {
+          URI: URI,
+          body: body,
+          context: new ApiContext(),
+          method: this.method
+        };
+      };
+
+      Api.prototype.invoke = function() {
+        var params, requestInfo;
+        params = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+        params = this.checkParams(params);
+        requestInfo = this.buildRequest(params);
+        return new Request(requestInfo).context;
+      };
+
+      Api.prototype.toFunction = function() {
+        return this.invoke.bind(this);
+      };
+
+      return Api;
+
+    })();
+    Request = (function(_super) {
+
+      __extends(Request, _super);
+
+      function Request(info) {
+        var xhr,
+          _this = this;
+        this.URI = info.URI;
+        this.body = info.body;
+        this.method = info.method;
+        this.context = info.context;
+        this.acceptStatus = [200, 302];
+        this.xhr = new XMLHttpRequest();
+        xhr = this.xhr;
+        xhr.open(this.method, this.URI, true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.send(this.body);
+        xhr.onreadystatechange = function(state) {
+          var json, _ref;
+          if (xhr.readyState !== 4) {
+            return;
+          }
+          if (_ref = xhr.status, __indexOf.call(_this.acceptStatus, _ref) < 0) {
+            _this.context._fail("Http Error", _this.createStatus());
+            return;
+          }
+          if (xhr.getResponseHeader("content-type") === "text/json") {
+            json = _this.json();
+            if (json) {
+              if (json.state) {
+                return _this.context._success(json.data);
+              } else {
+                return _this.context._fail(json.error, _this.createStatus());
+              }
+            } else {
+              return _this.context._fail("Json Parse Error", _this.createStatus());
+            }
+          } else {
+            _this.context._success(_this.text());
+            return true;
+          }
+        };
+      }
+
+      Request.prototype.text = function() {
+        return this.xhr.responseText;
+      };
+
+      Request.prototype.json = function() {
+        var json;
+        try {
+          json = JSON.parse(this.xhr.responseText);
+        } catch (e) {
+          return null;
+        }
+        return json;
+      };
+
+      Request.prototype.createStatus = function() {
+        return {
+          httpCode: this.xhr.status,
+          text: this.text(),
+          json: this.json()
+        };
+      };
+
+      return Request;
+
+    })(Leaf.EventEmitter);
+    ApiContext = (function() {
+
+      function ApiContext() {
+        this._response = function() {};
+        this._fail = function() {};
+        this._success = function() {};
+        this._time = -1;
+      }
+
+      ApiContext.prototype.response = function(callback) {
+        console.assert(typeof callback === "function");
+        this._response = callback;
+        return this;
+      };
+
+      ApiContext.prototype.fail = function(callback) {
+        console.assert(typeof callback === "function");
+        this._fail = callback;
+        return this;
+      };
+
+      ApiContext.prototype.success = function(callback) {
+        console.assert(typeof callback === "function");
+        this._success = callback;
+        return this;
+      };
+
+      ApiContext.prototype.timeout = function(time) {
+        console.assert(typeof time === "number");
+        this._time = time;
+        return this;
+      };
+
+      return ApiContext;
+
+    })();
+    return Leaf.ApiFactory = ApiFactory;
+  })(Leaf);
+
+}).call(this);
+// Generated by CoffeeScript 1.4.0
+(function() {
+  var __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  (function(Leaf) {
+    var Route, Router;
+    Router = (function(_super) {
+
+      __extends(Router, _super);
+
+      function Router() {
+        this.routes = [];
+      }
+
+      Router.prototype.add = function(path, callback) {
+        if (typeof path !== "string" || typeof callback !== "function") {
+          throw new Error("Route.add need path:string and callback:function as parameter");
+        }
+        return this.routes.push(new Route(path, callback));
+      };
+
+      Router.prototype.route = function(url) {
+        var info, route, _i, _len, _ref, _results;
+        _ref = this.routes;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          route = _ref[_i];
+          info = route.match(url);
+          if (info) {
+            _results.push(route.callback(info));
+          } else {
+            _results.push(void 0);
+          }
+        }
+        return _results;
+      };
+
+      Router.prototype.monitorHash = function() {
+        var _this = this;
+        return window.onhashchange = function() {
+          return _this.applyRouteByHash();
+        };
+      };
+
+      Router.prototype.applyRouteByHash = function() {
+        return this.route(window.location.hash.replace("#", ""));
+      };
+
+      return Router;
+
+    })(Leaf.EventEmitter);
+    Route = (function(_super) {
+
+      __extends(Route, _super);
+
+      function Route(path, callback) {
+        console.assert(typeof path === "string");
+        console.assert(typeof callback === "function");
+        this.path = path;
+        this.callback = callback;
+        this.sensitive = false;
+        this.strict = false;
+        this.parser = this.getParser(path);
+      }
+
+      Route.prototype.match = function(url) {
+        var index, key, matches, params, _i, _len, _ref;
+        matches = this.parser.regexp.exec(url);
+        if (!matches) {
+          return null;
+        }
+        params = {};
+        _ref = this.parser.keys;
+        for (index = _i = 0, _len = _ref.length; _i < _len; index = ++_i) {
+          key = _ref[index];
+          params[key] = matches[index + 1];
+        }
+        return {
+          url: url,
+          params: params
+        };
+      };
+
+      Route.prototype.getParser = function(path) {
+        var keyParser, keys, pathReg, pathRegStr, sensitive, strict;
+        strict = this.strict;
+        sensitive = this.sensitive;
+        keyParser = /(\/)?:(\w+)/g;
+        keys = [];
+        pathRegStr = path.concat(strict && "" || "/?");
+        pathRegStr = pathRegStr.replace(keyParser, function(_, slash, key) {
+          keys.push(key);
+          slash = slash || "";
+          return "(?:{slash})([^/]+)".replace("{slash}", slash);
+        });
+        pathRegStr = pathRegStr.replace(/[\/.*]/g, "\\$&");
+        pathReg = new RegExp("^" + pathRegStr + "$", sensitive && "" || "i");
+        return {
+          regexp: pathReg,
+          keys: keys
+        };
+      };
+
+      return Route;
+
+    })(Leaf.EventEmitter);
+    return Leaf.Router = Router;
   })(this.Leaf);
 
 }).call(this);

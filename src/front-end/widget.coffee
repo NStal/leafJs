@@ -1,6 +1,6 @@
 ((Leaf)->
     Util = Leaf.Util
-    class Widget extends Leaf.EventEmitter
+    class Widget extends Leaf.Observable
         constructor: (@template) ->
             super()
             @node = null 
@@ -90,7 +90,7 @@
             @_delegateEventForControl()
             return true
         _delegateEventForControl:(id)->
-            events = ["blur","click","focus","keydown","keyup","keypress"]
+            events = ["blur","click","focus","keydown","keyup","keypress","mousemove","mouseenter","mouseleave","mouseover","mouseout"]
             node = @UI[id]
             if not node
                 node = @node
@@ -120,7 +120,7 @@
                 return
                 
                 
-        prependTo:(target)-> 
+        prependTo:(target)->
             if Util.isHTMLElement(target)
                 target = target
             else if target instanceof Leaf.Widget
@@ -142,6 +142,24 @@
                 if node.parentElement
                     node.parentElement.removeChild node
             @emit("remove")
+        after:(target)->
+            if Util.isHTMLElement(target)
+                target = target
+            else if target instanceof Leaf.Widget
+                target = target.node
+            else
+                console.error "Insert unknow Object",target
+                return false
+            if not target or not target.parentElement
+                console.log target,target.parentElement
+                console.error "can't insert befere root element "
+                return false
+            if target.nextElementSibling
+                for node in @nodes
+                    target.parentElement.insertBefore node,target.nextElementSibling
+            else
+                for node in @nodes
+                    target.parentElement.appendChild node
         before:(target)->
             if Util.isHTMLElement(target)
                 target = target

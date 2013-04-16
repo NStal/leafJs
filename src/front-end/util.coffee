@@ -1,6 +1,6 @@
-((Leaf) ->
+((Leaf)->
     #An simple version of eventEmitter
-    # only has on/emit or alias bind/trigger  
+    # only has on/emit or alias bind/trigger
     class EventEmitter
         constructor: () ->
             @events = {}
@@ -14,7 +14,6 @@
                 option:{context:context}
             handlers.push handler
             return this
-            
         emit: (event,params...)->
             if @events[event]
                 for handler in @events[event]
@@ -32,7 +31,20 @@
         return false
     Util.isHTMLNode = (o) ->
         return (typeof Node is "object" and o instanceof Node ) or o and typeof o is "object" and typeof o.nodeType is "number" and typeof o.nodeName is "string"
-        
+    Util.isMobile = ()->
+        if navigator and navigator.userAgent
+            return (navigator.userAgent.match(/Android/i) or navigator.userAgent.match(/webOS/i) or navigator.userAgent.match(/iPhone/i) or navigator.userAgent.match(/iPad/i) or navigator.userAgent.match(/iPod/i) or navigator.userAgent.match(/BlackBerry/i) or navigator.userAgent.match(/Windows Phone/i)) and true
+        else
+            return false 
+    Util.getBrowserInfo = ()->
+        N= navigator.appName
+        ua= navigator.userAgent
+        M= ua.match(/(opera|chrome|safari|firefox|msie)\/?\s*(\.?\d+(\.\d+)*)/i);
+        tem= ua.match(/version\/([\.\d]+)/i)
+        if M and tem isnt null
+             M[2]= tem[1]
+        M= `M ? [M[1],M[2]] : [N, navigator.appVersion, '-?']`
+        return {name:M[0],version:M[1]}
     Util.capitalize = (string)-> string.charAt(0).toUpperCase() + string.slice(1);
     class KeyEventManager extends EventEmitter
         constructor:()->
@@ -57,7 +69,7 @@
                     @preventDefault()
                     @stopImmediatePropagation()
                 if @isActive and KeyEventManager.isActive
-                    @emit "keydown",e
+                    @emit "keyup",e
                     return e.catchEvent
                 return e.catchEvent
         active:()->
@@ -85,8 +97,47 @@
             if KeyEventManager.stack.length > 0
                 prev = KeyEventManager.stack.pop()
                 prev.active()
-            KeyEventManager.current = prev 
-    KeyEventManager.instances = [] 
+            KeyEventManager.current = prev
+    class Observable extends EventEmitter
+        #  not implemented
+        constructor:()->
+            super()
+        watch:(property,callback)->
+            # using defineSetter to redefine the property
+            # and call callbacks
+    Util.clone = (x)-> 
+        if x is null or x is undefined
+            return x;
+        if typeof x.clone is "function"
+            return x.clone();
+        if x.constructor == Array
+            r = [];
+            for item in x
+                r.push Util.clone(item)
+            return r; 
+        return x;
+    Util.compare = (x,y)->
+        if x is y
+            return true
+        for p of y 
+            if typeof x[p] is 'undefined' then return false; 
+        for p of y 
+            if y[p] 
+                switch typeof y[p] 
+                    when 'object'
+                        if not Util.compare(y[p],x[p]) then return false
+                    when 'function' 
+                        if typeof x[p] is 'undefined' or (p isnt 'equals' and y[p].toString() isnt x[p].toString()) 
+                            return false;
+                    else
+                        if y[p] isnt x[p] then return false
+            else if x[p]
+                return false; 
+        for p in x
+            if typeof(y[p]) is 'undefined' then return false
+        return true
+    
+    KeyEventManager.instances = []
     KeyEventManager.stack = []
     KeyEventManager.disable = ()->
         @isActive = true
@@ -146,9 +197,15 @@
     Key.pageup = 33
     Key.pagedown = 34
     Key.tab = 9;
+    Mouse = {}
+    Mouse.left = 0
+    Mouse.middle = 1
+    Mouse.right = 2
     Util.Key = Key
     Leaf.Util = Util
-    Leaf.Key = Key 
+    Leaf.Key = Key
+    Leaf.Mouse = Mouse
     Leaf.EventEmitter = EventEmitter
+    Leaf.Observable = Observable
     Leaf.KeyEventManager = KeyEventManager
 )(this.Leaf)
