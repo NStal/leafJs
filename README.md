@@ -40,10 +40,10 @@ jdCard.node$.appendTo(document.body)
 ```
 Init widgets using #id or an template string depends on what kind of widget it is. If it's an static element on the page and will always be there(unless hidden),using #id is a good idea, or just using a template string.We will introduce a good string template management scheme later.
 
-Though it can be used as exampled, we suggest program style like this (or other class inherit style)
+Though it can be used as exampled above, we suggest program styles like this (or other class inherit style)
 ```javascript
 function IdCard(){
-	Leaf.Widget.call(this,window.templates.idCard);
+	Leaf.Widget.call(this,window.templates["id-card"]);
 }
 IdCard.prototype = new Leaf.Widget()
 IdCard.prototype.init = function(data){
@@ -53,6 +53,16 @@ IdCard.prototype.init = function(data){
 }
 idCard = new IdCard()
 idCard.init(data)
+```
+or coffee-script
+```coffee-script
+class IdCard extends Leaf.Widget
+	constructor:()->
+		super(window.templates["id-card"]);
+	init:(data)->
+		@UI.name$.text data.text
+		@UI.age$.text data.age
+		@UI.introduction$.text data.introduction
 ```
 Detailed API can be refered [here](doc/widget.md)
 
