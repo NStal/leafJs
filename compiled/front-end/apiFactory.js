@@ -212,19 +212,20 @@
             _this.context._fail("Http Error", _this.createStatus());
             return;
           }
-          if (xhr.getResponseHeader("content-type") === "text/json") {
+          if (xhr.getResponseHeader("content-type") === "text/json" || ApiFactory.forceJson) {
             json = _this.json();
             if (json) {
-              if (json.state) {
-                return _this.context._success(json.data);
-              } else {
-                return _this.context._fail(json.error, _this.createStatus());
+              if (json.state === true) {
+                _this.context._success(json.data);
+              } else if (json.state === false) {
+                _this.context._fail(json.error, _this.createStatus());
               }
+              return _this.context._response(json);
             } else {
               return _this.context._fail("Json Parse Error", _this.createStatus());
             }
           } else {
-            _this.context._success(_this.text());
+            _this.context._response(_this.text());
             return true;
           }
         };
@@ -291,6 +292,7 @@
       return ApiContext;
 
     })();
+    ApiFactory.forceJson = true;
     return Leaf.ApiFactory = ApiFactory;
   })(Leaf);
 

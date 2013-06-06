@@ -1,5 +1,5 @@
 # Introduction
-LeafJs is an modern webapp frame work that provide some useful utils to manipulate HTML widgets and AJAX calls.
+LeafJs is a modern webapp frame work that provide some useful utils to manipulate HTML widgets and AJAX calls.
 LeafJs supports only modern browser(say firefox and chrome).IE is not tested.
 By the way, it's written in [coffee-script](http://coffeescript.org/).
 
@@ -25,7 +25,7 @@ A widget class can be attached to this html.
 No mather what $ is, Widget.UI.name$ is $(Widget.UI.name).
 
 
-Or using an string to manipulates.
+Or using a string to manipulates.
 ```javascript
 
 idCardTemplate='<div class="id-card"> <div class="name" data-id="name"></div> <div class="age" data-id="age"></div> <div class="introduction" data-id="introduction"></div> </div>'
@@ -38,7 +38,7 @@ document.body.appendChild(idCard.node)
 //or if jquery installed
 jdCard.node$.appendTo(document.body)
 ```
-Init widgets using #id or an template string depends on what kind of widget it is. If it's an static element on the page and will always be there(unless hidden),using #id is a good idea, or just using a template string.We will introduce a good string template management scheme later.
+Init widgets using #id or a template string depends on what kind of widget it is. If it's a static element on the page and will always be there(unless hidden),using #id is a good idea, or just using a template string.We will introduce a good string template management scheme later.
 
 Though it can be used as exampled above, we suggest program styles like this (or other class inherit style)
 ```javascript
@@ -109,7 +109,7 @@ window.API = factory.build()
 declare APIName,[paramname:type(optional),...]
 
 API URL = path+APIName+ suffix
-username:string means username must be an string.
+username:string means username must be a string.
 email:? means username is optional.
 Currently the only supported types are number and string.
 And Invoke
@@ -164,3 +164,34 @@ call.fail(function(err,detail){
 })
 ```
 
+# Util
+## EventEmitter
+Leaf.Util.EventEmitter or Leaf.EventEmitter
+```javascript
+em = new EventEmitter()
+em.on("event",callback)
+em.emit("event",param1,param2...)
+```
+
+## Key and KeyEventManager
+Leaf.Util.Key
+```javascript
+window.onclick(function(e){
+	if(e.which === Leaf.Util.Key.space){
+		...
+	}
+})
+```
+Leaf.Util.KeyEventManager
+KeyEventManager is used to manipulates hot complicated hotkeys.
+TODO:document it
+## Other
+Leaf.Util.clone and Leaf.Util.compare
+```
+deep clone and deep compare the object.
+```
+
+Leaf.Util.isHTMLElement(node)
+Leaf.Util.isHTMLNode(node)
+Leaf.Util.isMobile()
+Leaf.Util.browser is {name,version}

@@ -25,6 +25,10 @@
       };
 
       TemplateManager.prototype.start = function() {
+        return setTimeout(this._start.bind(this), 0);
+      };
+
+      TemplateManager.prototype._start = function() {
         var all, remain, remainTemplates, tid, _i, _j, _len, _len1, _ref,
           _this = this;
         all = this._fromDomAll();
