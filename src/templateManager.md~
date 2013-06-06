@@ -1,7 +1,0 @@
-#TemplateManager
-templateManager is used to  manipulate the HTML snippet.
-The TemplateManager will try to get the templates in several procesures below:
-1.Try to get templates from current content DOM
-      a) Extract the content from <noscript id='leaf-templates' type='text/json'></noscript>  as an json ,then consider it as the collection of the templates then TemplateManager.templates = noScriptJson.
-      b) Extract the content from <noscript data-tid='id' data-type='template'></noscript> as plain HTML snippet.than assambled togather into an object.The data-tid is specified by TemplateManager.want(tid).The format of an tid should be like "path/path/widgetname", because when data-tid matched what we want,TemplateManager will try to 
-      c) send XHR requests to {TemplateManager.baseUrl+tid} to fetch each template.

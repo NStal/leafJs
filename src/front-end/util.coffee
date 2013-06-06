@@ -45,13 +45,15 @@
              M[2]= tem[1]
         M= `M ? [M[1],M[2]] : [N, navigator.appVersion, '-?']`
         return {name:M[0],version:M[1]}
+    Util.browser = getBrowserInfo()
     Util.capitalize = (string)-> string.charAt(0).toUpperCase() + string.slice(1);
     class KeyEventManager extends EventEmitter
-        constructor:()->
+        constructor:(node)->
             super()
             KeyEventManager.instances.push this
             @isActive = false
-            return
+            if node
+                @attachTo node
         attachTo:(node)->
             @attachment = node
             $(@attachment).keydown (e)=>
@@ -119,6 +121,14 @@
     Util.compare = (x,y)->
         if x is y
             return true
+        
+        if x instanceof Array and y instanceof Array
+            if x.length isnt y.length
+                return false
+            for item,index in x
+                if not Util.compare item,y[index]
+                    return false
+            return true
         for p of y 
             if typeof x[p] is 'undefined' then return false; 
         for p of y 
@@ -155,6 +165,13 @@
     Key["7"]=55;
     Key["8"]=56;
     Key["9"]=57;
+    if Util.browser
+        if Util.browser.name is "firefox"
+            Key.cmd = 224
+        else if Util.browser.name is "opera"
+            Key.cmd = 17
+        else
+            Key.cmd = 91
     Key.a=65;
     Key.b=66;
     Key.c=67;
