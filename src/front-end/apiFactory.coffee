@@ -119,17 +119,20 @@ do (Leaf)->
                 if xhr.status not in @acceptStatus
                     @context._fail("Http Error",@createStatus())
                     return
-                if xhr.getResponseHeader("content-type") is "text/json"
+                if xhr.getResponseHeader("content-type") is "text/json" or ApiFactory.forceJson
                     json = @json()
                     if json
-                        if json.state
+                        if json.state is true
                             @context._success(json.data)
-                        else
+                        else if json.state is false
                             @context._fail(json.error,@createStatus())
+                        @context._response(json)
+                        
+                        
                     else
                         @context._fail("Json Parse Error",@createStatus())
                 else
-                    @context._success @text()
+                    @context._response @text()
                     return true
                         
         text:()->
@@ -169,5 +172,5 @@ do (Leaf)->
             console.assert typeof time is "number"
             @_time = time
             return this
-        
+    ApiFactory.forceJson = true
     Leaf.ApiFactory = ApiFactory

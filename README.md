@@ -83,5 +83,74 @@ templateManager.start()
 The templates can also be retrieved from current page or event mixed with the remote one.
 Detailed strategy can be refered [here](doc/templateManager.md)
 
+# APIFactory
+Declare and manipulated all apis in one place
+```javascript
+factory = new Leaf.ApiFactory()
+factory.path = "my-api/" // default is "api/"
+factory.suffix = "" // default is ""
+factory.defaultMethod = "POST" //default is "GET"
+factory.declare("signup",["username:string","password:string","email:?"])
+factory.declare("signin",["username:string","password:string"])
+factory.declare("isSignin",[]) 
+factory.declare("sync",["data:string","lastSync:number?","lastUpdate:number?"])
+window.API = factory.build()
+```javascript
+declare APIName,[paramname:type(optional),...]
 
+API URL = path+APIName+ suffix
+username:string means username must be an string.
+email:? means username is optional.
+Currently the only supported types are number and string.
+And Invoke
+
+```
+API.signup("username","password") //OK
+API.signup("username","password","test@gmail.com") //OK
+API.signup("username","") //OK
+API.signup("username",null) //throw Error
+```
+
+Callbacks.
+```javascript
+APIFactory.forceJson = true  // This is default, or only parsed into json when server return content-type:text/json
+...
+call = API.signup("username","password")
+call.response(function(data){
+	...
+})
+call.fail(function(err,detail){
+	//server 403/404 503 or network error 
+	...
+})
+```
+
+If server obey this format
+
+success
+```
+state:true or false
+data:request data
+```
+
+fail
+```
+state:false
+error:error description
+errorCode: error code
+```
+
+Callback can be handle like this
+```javascript
+call = API.isSignin()
+//state:true  means request success
+//data:false means not sign in
+call.success(function(data){
+	//data:true or false
+	...
+})
+call.fail(function(err,detail){
+	//error handling
+})
+```
 
