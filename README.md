@@ -8,9 +8,9 @@ By the way, it's written in [coffee-script](http://coffeescript.org/).
 Easy UI access
 ```html
 <div class="id-card">
-	<div class="name" data-id="name"></div>
-	<div class="age" data-id="age"></div>
-	<div class="introduction" data-id="introduction"></div>
+	<div data-id="name"></div>
+	<div data-id="age"></div>
+	<div data-id="introduction"></div>
 </div>
 ```
 A widget class can be attached to this html.
@@ -23,7 +23,8 @@ A widget class can be attached to this html.
  idCard.UI.$name.text("myname")
  ```
 No mather what $ is, Widget.UI.name$ is $(Widget.UI.name).
-
+"name" comes from data-id property of the element.
+We can access the root of the widget for Widget.node or Widget.node$ for jquery version.
 
 Or using a string to manipulates.
 ```javascript
