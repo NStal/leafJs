@@ -13,7 +13,7 @@ Easy UI access
 	<div class="introduction" data-id="introduction"></div>
 </div>
 ```
-An widget class can be attached to this html.
+A widget class can be attached to this html.
 ```javascript
  idCard = new Leaf.Widget("#idCard")
  idCard.UI.name.innerHTML = "myname"
@@ -38,7 +38,7 @@ document.body.appendChild(idCard.node)
 //or if jquery installed
 jdCard.node$.appendTo(document.body)
 ```
-Manipulate widgets using #id or an template string depends on what kind of widget it is. If it's an static element on the page and will always be there(unless hidden),using #id is an good idea, or just using a template string.We will introduce an good string template management scheme later.
+Init widgets using #id or an template string depends on what kind of widget it is. If it's an static element on the page and will always be there(unless hidden),using #id is a good idea, or just using a template string.We will introduce a good string template management scheme later.
 
 Though it can be used as exampled, we suggest program style like this (or other class inherit style)
 ```javascript
@@ -55,4 +55,12 @@ idCard = new IdCard()
 idCard.init(data)
 ```
 Detailed API can be refered [here](doc/widget.md)
+
+# TemplateManager
+
+```javascript
+templateManager = new TemplateManager()
+templateManager.use "id-card","id-card-list"
+templateManager.start()
+```
 

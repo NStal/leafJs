@@ -9,7 +9,9 @@
             @timeout = 10000 #default timeout
         use: (tids...) ->
             @tids.push.apply @tids,tids
-        start:() ->
+        start:()->
+            setTimeout @_start.bind(this),0
+        _start:() ->
             all = @_fromDomAll()
             for tid in @tids
                 @templates[tid] = all[tid]
