@@ -169,7 +169,7 @@ call.fail(function(err,detail){
 ## EventEmitter
 Leaf.Util.EventEmitter or Leaf.EventEmitter
 ```javascript
-em = new EventEmitter()
+em = new Leaf.EventEmitter()
 em.on("event",callback)
 em.emit("event",param1,param2...)
 ```
