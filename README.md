@@ -85,8 +85,8 @@ templateManager.on("error",function(){
 Where to store the templates.Templates will be fetched from "./template/name.html" , which is "./template/id-card.html" and "./template/id-card-list.html" in example.
 Different baseUrl and suffix can be assigne before start.
 ```javascript
-templateManager.baseUrl = "template/" //or "custom-template/"
-templateManager.suffix = ".xhtml"
+templateManager.baseUrl = "custom-template/" // default is template/"
+templateManager.suffix = ".xhtml" // default is ".html"
 templateManager.start()
 ...
 ```
