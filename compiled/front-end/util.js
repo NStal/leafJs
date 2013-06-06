@@ -82,11 +82,13 @@
     KeyEventManager = (function(_super) {
       __extends(KeyEventManager, _super);
 
-      function KeyEventManager() {
+      function KeyEventManager(node) {
         KeyEventManager.__super__.constructor.call(this);
         KeyEventManager.instances.push(this);
         this.isActive = false;
-        return;
+        if (node) {
+          this.attachTo(node);
+        }
       }
 
       KeyEventManager.prototype.attachTo = function(node) {
