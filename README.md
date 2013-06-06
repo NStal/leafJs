@@ -115,9 +115,9 @@ Currently the only supported types are number and string.
 And Invoke
 
 ```javascript
-API.signup("username","password") //OK
-API.signup("username","password","test@gmail.com") //OK
-API.signup("username","") //OK
+API.signup("username","password") //OK -> POST my-api/username?username=username&password=password
+API.signup("username","password","test@gmail.com") //OK //OK -> POST my-api/username?username=username&password=password&email=test@gmail.com
+API.signup("username","") //OK 
 API.signup("username",null) //throw Error
 ```
 
