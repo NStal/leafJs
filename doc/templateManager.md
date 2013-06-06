@@ -2,8 +2,8 @@
 templateManager is used to  manipulate the HTML snippet.
 The TemplateManager will try to get the templates in several procesures below:
 1.Try to get templates from current content DOM
-      a) Extract the content from <noscript id='leaf-templates' type='text/json'></noscript>  as an json ,then consider it as the collection of the templates then TemplateManager.templates = noScriptJson.
-      b) Extract the content from <noscript data-tid='id' data-type='template'></noscript> as plain HTML snippet.than assambled togather into an object.The data-tid is specified by TemplateManager.want(tid).The format of an tid should be like "path/path/widgetname", because when data-tid matched what we want,TemplateManager will try to 
+      a) Extract the content from ```<noscript id='leaf-templates' type='text/json'></noscript>``` as an json ,then consider it as the collection of the templates then TemplateManager.templates = noScriptJson.
+      b) Extract the content from ```<noscript data-tid='id' data-type='template'></noscript>``` as plain HTML snippet.than assambled togather into an object.The data-tid is specified by TemplateManager.want(tid).The format of an tid should be like "path/path/widgetname", because when data-tid matched what we want,TemplateManager will try to 
 2.Try to get templates from server by sending XHR requests to {TemplateManager.baseUrl+tid} to fetch each template.
 
 It's the convinience of development and efficiency for production.You can choose to compile all templates into the HTML or just do real-time fetching for fast development or real-time update.
@@ -11,16 +11,14 @@ It's the convinience of development and efficiency for production.You can choose
 #example
 ```javascript
 var templateManager = new Leaf.TemplateManager();
-templateManager.use([
-	"timeline"
-	,"setting-panel"
-])
+templateManager.use "timeline" ,"setting-panel"
+
 //settings .baseUrl and .suffix will help change default fetch url
 //see explanation below
 //templateManager.baseUrl = "mypath/";
 //templateManager.suffix = ".html";
 //templateManager.timeout = 5000 ;
-templateManager.ready(function(allTemplates){
+templateManager.on("ready",function(allTemplates){
 	console.log(allTemplates)
 });
 ```

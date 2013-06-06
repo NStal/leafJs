@@ -105,7 +105,7 @@ factory.declare("signin",["username:string","password:string"])
 factory.declare("isSignin",[]) 
 factory.declare("sync",["data:string","lastSync:number?","lastUpdate:number?"])
 window.API = factory.build()
-```javascript
+```
 declare APIName,[paramname:type(optional),...]
 
 API URL = path+APIName+ suffix
@@ -114,7 +114,7 @@ email:? means username is optional.
 Currently the only supported types are number and string.
 And Invoke
 
-```
+```javascript
 API.signup("username","password") //OK
 API.signup("username","password","test@gmail.com") //OK
 API.signup("username","") //OK
@@ -192,6 +192,9 @@ deep clone and deep compare the object.
 ```
 
 Leaf.Util.isHTMLElement(node)
+
 Leaf.Util.isHTMLNode(node)
+
 Leaf.Util.isMobile()
+
 Leaf.Util.browser is {name,version}
