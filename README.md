@@ -60,7 +60,28 @@ Detailed API can be refered [here](doc/widget.md)
 
 ```javascript
 templateManager = new TemplateManager()
-templateManager.use "id-card","id-card-list"
+templateManager.use("id-card","id-card-list")
 templateManager.start()
+templateManager.on("ready",function(templates){
+	window.templates = templates
+	...init apps with templates["id-card"] or templates["id-card-list"]
+})
+//if cares
+templateManager.on("error",function(){
+	...error handling
+})
 ```
+Where to store the templates.Templates will be fetched from "./template/name.html" , which is "./template/id-card.html" and "./template/id-card-list.html" in example.
+Different baseUrl and suffix can be assigne before start.
+```javascript
+templateManager.baseUrl = "template/" //or "custom-template/"
+templateManager.suffix = ".xhtml"
+templateManager.start()
+...
+```
+
+The templates can also be retrieved from current page or event mixed with the remote one.
+Detailed strategy can be refered [here](doc/templateManager.md)
+
+
 
