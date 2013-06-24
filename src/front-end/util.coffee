@@ -45,7 +45,7 @@
              M[2]= tem[1]
         M= `M ? [M[1],M[2]] : [N, navigator.appVersion, '-?']`
         return {name:M[0],version:M[1]}
-    Util.browser = getBrowserInfo()
+    Util.browser = Util.getBrowserInfo()
     Util.capitalize = (string)-> string.charAt(0).toUpperCase() + string.slice(1);
     class KeyEventManager extends EventEmitter
         constructor:(node)->
