@@ -66,6 +66,9 @@
                         continue
                     if this[name] instanceof Widget
                         this[name].replace widget
+                    else if this[name]
+                        console.error "Widget named #{name} isnt isn't instanceof Widget"
+                        console.trace()
                     else
                         console.error "Widget named",name,"not exists for",widget
                         console.trace()

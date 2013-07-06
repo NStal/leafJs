@@ -438,6 +438,9 @@
               }
               if (this[name] instanceof Widget) {
                 _results1.push(this[name].replace(widget));
+              } else if (this[name]) {
+                console.error("Widget named " + name + " isnt isn't instanceof Widget");
+                _results1.push(console.trace());
               } else {
                 console.error("Widget named", name, "not exists for", widget);
                 _results1.push(console.trace());
