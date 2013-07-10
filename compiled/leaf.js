@@ -491,7 +491,7 @@
         var event, events, node, _i, _len, _results,
           _this = this;
 
-        events = ["blur", "click", "focus", "keydown", "keyup", "keypress", "mousemove", "mouseenter", "mouseleave", "mouseover", "mouseout"];
+        events = ["blur", "click", "focus", "keydown", "keyup", "keypress", "mousemove", "mouseenter", "mouseleave", "mouseover", "mouseout", "scroll"];
         node = this.UI[id];
         if (!node) {
           node = this.node;
@@ -1265,7 +1265,7 @@
       Api.prototype.checkParams = function(params) {
         var declare, index, _i, _j, _len, _len1, _ref, _ref1, _result;
 
-        if (params.length === 1 && typeof params === "object") {
+        if (params.length === 1 && typeof params[0] === "object") {
           _ref = this.declares;
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             declare = _ref[_i];

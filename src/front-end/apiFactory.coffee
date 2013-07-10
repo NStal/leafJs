@@ -1,4 +1,4 @@
-Leaf = window.Leaf
+Leaf = window.Leaf 
 do (Leaf)->
     class ApiFactory extends Leaf.EventEmitter
         constructor:(apis)->
@@ -70,7 +70,7 @@ do (Leaf)->
                     console.warn "change param#{declare.name} of API #{@info.name} from string to number"
                     return value        
         checkParams:(params)->
-            if params.length is 1 and typeof params is "object"
+            if params.length is 1 and typeof params[0] is "object"
                 for declare in @declares
                     params[declare.name] = encodeURIComponent(@checkParam(params[declare.name],declare))
                 return params

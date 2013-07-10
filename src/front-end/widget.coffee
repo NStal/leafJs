@@ -93,7 +93,7 @@
             @_delegateEventForControl()
             return true
         _delegateEventForControl:(id)->
-            events = ["blur","click","focus","keydown","keyup","keypress","mousemove","mouseenter","mouseleave","mouseover","mouseout"]
+            events = ["blur","click","focus","keydown","keyup","keypress","mousemove","mouseenter","mouseleave","mouseover","mouseout","scroll"]
             node = @UI[id]
             if not node
                 node = @node

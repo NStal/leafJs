@@ -148,7 +148,7 @@
         var event, events, node, _i, _len, _results,
           _this = this;
 
-        events = ["blur", "click", "focus", "keydown", "keyup", "keypress", "mousemove", "mouseenter", "mouseleave", "mouseover", "mouseout"];
+        events = ["blur", "click", "focus", "keydown", "keyup", "keypress", "mousemove", "mouseenter", "mouseleave", "mouseover", "mouseout", "scroll"];
         node = this.UI[id];
         if (!node) {
           node = this.node;

@@ -135,7 +135,7 @@
       Api.prototype.checkParams = function(params) {
         var declare, index, _i, _j, _len, _len1, _ref, _ref1, _result;
 
-        if (params.length === 1 && typeof params === "object") {
+        if (params.length === 1 && typeof params[0] === "object") {
           _ref = this.declares;
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             declare = _ref[_i];
