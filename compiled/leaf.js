@@ -1284,11 +1284,12 @@
       };
 
       Api.prototype.buildRequest = function(paramsDict) {
-        var URI, body, key, query, queryArray, _ref;
+        var URI, body, key, query, queryArray, value, _ref;
 
         queryArray = [];
         for (key in paramsDict) {
-          queryArray.push([key, paramsDict[key]].join("="));
+          value = encodeURIComponent(paramsDict[key]);
+          queryArray.push([key, value].join("="));
         }
         query = queryArray.join("&");
         URI = "";

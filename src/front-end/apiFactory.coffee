@@ -82,7 +82,8 @@ do (Leaf)->
         buildRequest:(paramsDict)->
             queryArray = []
             for key of paramsDict
-                queryArray.push [key,paramsDict[key]].join("=")
+                value = encodeURIComponent(paramsDict[key])
+                queryArray.push [key,value].join("=")
             query = queryArray.join("&")
             URI = ""
             body = ""
