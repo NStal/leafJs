@@ -1,4 +1,4 @@
-Leaf = window.Leaf 
+Leaf = window.Leaf
 do (Leaf)->
     class ApiFactory extends Leaf.EventEmitter
         constructor:(apis)->
@@ -71,6 +71,7 @@ do (Leaf)->
                     return value        
         checkParams:(params)->
             if params.length is 1 and typeof params[0] is "object"
+                params = params[0]
                 for declare in @declares
                     params[declare.name] = encodeURIComponent(@checkParam(params[declare.name],declare))
                 return params
