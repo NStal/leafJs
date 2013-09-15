@@ -73,7 +73,7 @@ do (Leaf)->
             if params.length is 1 and typeof params[0] is "object"
                 params = params[0]
                 for declare in @declares
-                    params[declare.name] = encodeURIComponent(@checkParam(params[declare.name],declare))
+                    params[declare.name] = @checkParam(params[declare.name],declare)
                 return params
             else
                 _result = {}

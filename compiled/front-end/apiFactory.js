@@ -134,7 +134,7 @@
           _ref = this.declares;
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             declare = _ref[_i];
-            params[declare.name] = encodeURIComponent(this.checkParam(params[declare.name], declare));
+            params[declare.name] = this.checkParam(params[declare.name], declare);
           }
           return params;
         } else {
