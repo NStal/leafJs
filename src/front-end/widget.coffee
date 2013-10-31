@@ -1,6 +1,6 @@
 ((Leaf)->
     Util = Leaf.Util
-    class Widget extends Leaf.Observable
+    class Widget extends Leaf.EventEmitter
         constructor: (@template) ->
             super()
             @node = null 
@@ -49,8 +49,38 @@
                 @$node = $(@node)
                 @node$ = @$node
             @initUI()
+            @initData()
             @initSubWidgets()
             Widget.emit "widget",this
+        initData:()->
+            if not @Data
+                @Data = {}
+            for name of @Data
+                if not @UI[name]
+                    console.debug "useless widget data #{name}"
+                    continue
+                do ()=>
+                    value = @Data[name]
+                    Object.defineProperty @Data,name,{
+                        set:(newValue)=>
+                            @_asignValueToDom name,newValue
+                            value = newValue
+                        get:()=>
+                            return value 
+                    }
+                    # default value or just what ever on HTML
+                    if value
+                        @Data[name] = value
+                    else
+                        @Data[name] = @UI[name].innerText
+        _asignValueToDom:(name,value)->
+            if not @UI[name]
+                throw "invalid UI '#{name}'"
+            dom = @UI[name]
+            # now just set text
+            if typeof value is "string" of value instanceof String
+                @UI[name].innerText = value
+                return
         initSubWidgets:()->
             for node in @nodes
                 widgets = node.getElementsByTagName("widget")
@@ -60,6 +90,7 @@
                 for item in widgets
                     _widgets.push item
                 widgets = _widgets
+                
                 for widget,index in widgets
                     name = widget.getAttribute "data-widget"
                     if not name
@@ -98,7 +129,7 @@
             if not node
                 node = @node
                 id = "node"
-            for event in events 
+            for event in events
                 ((event)=>
                     node["on"+event] = (e)=>
                         if typeof @["on"+Util.capitalize(event)+Util.capitalize(id)] is "function"
@@ -172,12 +203,10 @@
                 console.error "Insert unknow Object,target"
                 return false
             if not target or not target.parentElement
-                console.log target,target.parentElement
                 console.error "can't insert befere root element "
                 return false
             for node in @nodes
                 target.parentElement.insertBefore(node,target)
-                 
             @nodes.reverse()
             return true
         occupy:(target)->
@@ -186,7 +215,127 @@
             if target instanceof Leaf.Widget
                 target.node.innerHTML = ""
             @appendTo(target)
-                
+    class List extends Widget
+        constructor:(template,create)->
+            super template
+            @init create
+            Object.defineProperty(this,"length",{
+                get:()=>
+                    return @_length
+                set:(value)=>
+                    if value > @_length
+                        throw "can't asign length larger than the origin"
+                    if value < 0
+                        throw "can't asign length lesser than 0"
+                    if typeof value isnt "number"
+                        throw new TypeError()
+                    for index in [value...@length]
+                        @[index].remove()
+                        delete @[index]
+                    @_length = value
+                    
+            })
+        init:(create)->
+            @create = create or @create or (item)=>item
+            @_length = 0
+            @node.innerHTML = ""
+        check:(item)->
+            if item not instanceof Widget
+                throw "Leaf List only accept element as widget"
+        push:(item)->
+            @create(item)
+            @check item
+            @[@_length]=item
+            @_length++
+            item.appendTo @node
+            return @_length
+        pop:()->
+            if @_length is 0
+                return null
+            @_length -= 1
+            item = @[@_length]
+            delete @[@_length]
+            item.remove()
+            return item
+        unshift:(item)->
+            @create(item)
+            @check item
+            if @_length is 0
+                item.appendTo @node
+                @[0] = item
+                return 1
+            for index in [@_length..1]
+                @[index] = @[index-1]
+            @[0] = item
+            @_length += 1
+            item.prependTo @node
+            return @_length
+        shift:()->
+            result = @[0]
+            for index in [0...@_length-1]
+                @[index] = @[index+1]
+            result.remove()
+            return result
+        splice:(index,count,toAdd...)->
+            result = []
+            # check index
+            if not count or index + count > @_length
+                count = @_length - index
+            for offset in [0...count]
+                item = @[index+offset]
+                item.remove()
+                result.push item
+            # make DOM match result
+            toAddFinal = (@create item for item in toAdd)
+            if index is 0
+                for item in toAddFinal
+                    @check item
+                    item.prependTo @node
+            else
+                achor = @[index-1]
+                for item in toAddFinal
+                    @checkitem
+                    item.after achor
+            # make list match result
+            increase = toAddFinal.length - count
+            # we make the hole left by remove "count" items
+            # match the toAdd.length by shifting them one by one
+            # of tha mount of toAdd.length - count
+            # so we can fill them one by one
+            for origin in [index+count...@_length]
+                @[origin+increase] = @[origin]
+            # fill the hole
+            for item,offset in toAddFinal
+                @[index+offset] = item
+            @_length += increase
+            return result
+        slice:(from,to)->
+            return @toArray().slice(from,to)
+        forEach:(handler)->
+            for item in this
+                handler(item)
+        toArray:()->
+            return (item for item in this)
+        sync:(arr,converter = (item)->item)->
+            finalArr = []
+            for item,index in arr
+                _ = converter(item)
+                if not (_ instanceof Widget)
+                    throw "sync means invalid item in arr index:#{index}"
+                finalArr.push _
+            for index in [0...@_length]
+                delete this[index]
+            @node.innerHTML = ""
+            for item,index in finalArr
+                @[index] = item
+                item.appendTo @node
+            @_length = finalArr.length
+            return this
+        sort:(judge)->
+            @sync @toArray().sort(judge)
+    Widget.List = List
+    Widget.makeList = (node,create)=>
+        return new Widget.List(node,create)
     Widget.Event = new Leaf.EventEmitter()
     Widget.on = ()->
         @Event.on.apply @Event,arguments

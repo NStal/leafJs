@@ -5,7 +5,7 @@
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   (function(Leaf) {
-    var EventEmitter, Key, KeyEventManager, Mouse, Observable, Util;
+    var EventEmitter, Key, KeyEventManager, Mouse, Util;
     EventEmitter = (function() {
       function EventEmitter() {
         this.events = {};
@@ -161,20 +161,8 @@
       return KeyEventManager;
 
     })(EventEmitter);
-    Observable = (function(_super) {
-      __extends(Observable, _super);
-
-      function Observable() {
-        Observable.__super__.constructor.call(this);
-      }
-
-      Observable.prototype.watch = function(property, callback) {};
-
-      return Observable;
-
-    })(EventEmitter);
     Util.clone = function(x) {
-      var item, r, _i, _len;
+      var item, obj, prop, r, _i, _len;
       if (x === null || x === void 0) {
         return x;
       }
@@ -188,6 +176,13 @@
           r.push(Util.clone(item));
         }
         return r;
+      }
+      if (typeof x === "Object") {
+        obj = {};
+        for (prop in x) {
+          obj[prop] = Util.clone(x[prop]);
+          return obj;
+        }
       }
       return x;
     };
@@ -323,7 +318,6 @@
     Leaf.Key = Key;
     Leaf.Mouse = Mouse;
     Leaf.EventEmitter = EventEmitter;
-    Leaf.Observable = Observable;
     return Leaf.KeyEventManager = KeyEventManager;
   })(this.Leaf);
 

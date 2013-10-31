@@ -7,7 +7,7 @@
             #alias
             @trigger = @emit
             @bind = @on
-        on: (event,callback,context)->
+        on:(event,callback,context)->
             handlers = @events[event] = @events[event] || []
             handler = 
                 callback:callback
@@ -20,8 +20,7 @@
                     handler.callback.apply(
                         handler.option and handler.option.context or @,
                         params)
-                
-
+    
     Util = {}
     # judge is template is an HTMLDOMElement
     # from:http://stackoverflow.com/questions/384286/javascript-isdom-how-do-you-check-if-a-javascript-object-is-a-dom-object
@@ -100,13 +99,7 @@
                 prev = KeyEventManager.stack.pop()
                 prev.active()
             KeyEventManager.current = prev
-    class Observable extends EventEmitter
-        #  not implemented
-        constructor:()->
-            super()
-        watch:(property,callback)->
-            # using defineSetter to redefine the property
-            # and call callbacks
+    
     Util.clone = (x)-> 
         if x is null or x is undefined
             return x;
@@ -117,6 +110,11 @@
             for item in x
                 r.push Util.clone(item)
             return r; 
+        if typeof x is "Object"
+            obj = {}
+            for prop of x
+                obj[prop] = Util.clone(x[prop])
+                return obj
         return x;
     Util.compare = (x,y)->
         if x is y
@@ -223,6 +221,5 @@
     Leaf.Key = Key
     Leaf.Mouse = Mouse
     Leaf.EventEmitter = EventEmitter
-    Leaf.Observable = Observable
     Leaf.KeyEventManager = KeyEventManager
 )(this.Leaf)
