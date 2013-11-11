@@ -175,7 +175,6 @@
             for node in @nodes
                 if node.parentElement
                     node.parentElement.removeChild node
-            @emit("remove")
         after:(target)->
             if Util.isHTMLElement(target)
                 target = target
@@ -236,18 +235,28 @@
                     
             })
         init:(create)->
-            @create = create or @create or (item)=>item
+            @create = create or @create or (item)=>return item
             @_length = 0
             @node.innerHTML = ""
         check:(item)->
             if item not instanceof Widget
-                throw "Leaf List only accept element as widget"
+                throw "Leaf List only accept widget as element"
+            for child in this
+                if child is item
+                    throw "already exists"
+        indexOf:(item)->
+            for child,index in this
+                if item is child
+                    return index
+            return -1
         push:(item)->
-            @create(item)
+            item = @create(item)
             @check item
             @[@_length]=item
             @_length++
             item.appendTo @node
+            item.parentList = this
+            @emit "add",item
             return @_length
         pop:()->
             if @_length is 0
@@ -256,9 +265,11 @@
             item = @[@_length]
             delete @[@_length]
             item.remove()
+            @emit "remove",item
+            item.parentList = null
             return item
         unshift:(item)->
-            @create(item)
+            item = @create(item)
             @check item
             if @_length is 0
                 item.appendTo @node
@@ -269,21 +280,34 @@
             @[0] = item
             @_length += 1
             item.prependTo @node
+            @emit "add",item
+            item.parentList = this
             return @_length
+        removeItem:(item)->
+            index = @indexOf(item)
+            if index < 0 then return index
+            @splice(index,1)
+            item.parentList = null
+            @emit "remove",item
+            return item
         shift:()->
             result = @[0]
             for index in [0...@_length-1]
                 @[index] = @[index+1]
             result.remove()
+            @emit "remove",result
+            result.parentList = null
             return result
         splice:(index,count,toAdd...)->
             result = []
             # check index
-            if not count or index + count > @_length
+            if typeof count is "undefined" or index + count > @_length
                 count = @_length - index
             for offset in [0...count]
                 item = @[index+offset]
                 item.remove()
+                @emit "remove",item
+                item.parentList = null
                 result.push item
             # make DOM match result
             toAddFinal = (@create item for item in toAdd)
@@ -291,19 +315,30 @@
                 for item in toAddFinal
                     @check item
                     item.prependTo @node
+                    @emit "add",item
+                    item.parentList = this
             else
                 achor = @[index-1]
                 for item in toAddFinal
-                    @checkitem
+                    @check item
                     item.after achor
-            # make list match result
-            increase = toAddFinal.length - count
-            # we make the hole left by remove "count" items
+                    @emit "add",item
+                    item.parentList = this
+                    
+            # now make list match DOM
+            # I make the hole left by remove "count" items
             # match the toAdd.length by shifting them one by one
-            # of tha mount of toAdd.length - count
+            # That is mount of toAdd.length - count
             # so we can fill them one by one
-            for origin in [index+count...@_length]
-                @[origin+increase] = @[origin]
+            increase = toAddFinal.length - count
+            if increase < 0
+                for origin in [index+count...@_length]
+                    @[origin+increase] = @[origin]
+            else if increase > 0
+                for origin in [@_length-1...index+count-1] 
+                    @[origin+increase] = @[origin]
+                
+                
             # fill the hole
             for item,offset in toAddFinal
                 @[index+offset] = item
@@ -316,19 +351,23 @@
                 handler(item)
         toArray:()->
             return (item for item in this)
-        sync:(arr,converter = (item)->item)->
+        syncWith:(arr,converter = (item)->item)->
             finalArr = []
             for item,index in arr
                 _ = converter(item)
                 if not (_ instanceof Widget)
-                    throw "sync means invalid item in arr index:#{index}"
+                    throw "sync of invalid widget at index:#{index}"
                 finalArr.push _
             for index in [0...@_length]
+                @emit "remove",this[index]
+                this[index].parentList = null
                 delete this[index]
             @node.innerHTML = ""
             for item,index in finalArr
                 @[index] = item
                 item.appendTo @node
+                @emit "add",item
+                item.parentList = this
             @_length = finalArr.length
             return this
         sort:(judge)->

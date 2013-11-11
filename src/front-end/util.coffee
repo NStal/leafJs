@@ -14,12 +14,40 @@
                 option:{context:context}
             handlers.push handler
             return this
+        removeListener:(event,listener)->
+            handlers =  @events[event]
+            if not handlers then return false
+            for handler,index in handlers
+                if handler.callback is listener
+                    handlers[index] = null
+            @events[event] = handlers.filter (item)->item
+            return this
+        removeAllListeners:(event)->
+            if event
+                @events[event] = []
+            else
+                @events = {}
+            return this
         emit: (event,params...)->
-            if @events[event]
-                for handler in @events[event]
+            handlers = @events[event]
+            if handlers
+                once = false
+                for handler,index in handlers
                     handler.callback.apply(
                         handler.option and handler.option.context or @,
                         params)
+                    if handler.option.once
+                        once = true
+                if once
+                    @events[event] = handlers.filter (item)->item.option.once
+            return this
+        once:(event,callback,context)->
+            handlers = @events[event] = @events[event] || []
+            handler = 
+                callback:callback
+                option:{context:context,once:true}
+            handlers.push handler
+            return this
     
     Util = {}
     # judge is template is an HTMLDOMElement

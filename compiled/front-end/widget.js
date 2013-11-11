@@ -272,15 +272,18 @@
       };
 
       Widget.prototype.remove = function() {
-        var node, _i, _len, _ref;
+        var node, _i, _len, _ref, _results;
         _ref = this.nodes;
+        _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           node = _ref[_i];
           if (node.parentElement) {
-            node.parentElement.removeChild(node);
+            _results.push(node.parentElement.removeChild(node));
+          } else {
+            _results.push(void 0);
           }
         }
-        return this.emit("remove");
+        return _results;
       };
 
       Widget.prototype.after = function(target) {
@@ -394,17 +397,41 @@
       };
 
       List.prototype.check = function(item) {
+        var child, _i, _len, _results;
         if (!(item instanceof Widget)) {
-          throw "Leaf List only accept element as widget";
+          throw "Leaf List only accept widget as element";
         }
+        _results = [];
+        for (_i = 0, _len = this.length; _i < _len; _i++) {
+          child = this[_i];
+          if (child === item) {
+            throw "already exists";
+          } else {
+            _results.push(void 0);
+          }
+        }
+        return _results;
+      };
+
+      List.prototype.indexOf = function(item) {
+        var child, index, _i, _len;
+        for (index = _i = 0, _len = this.length; _i < _len; index = ++_i) {
+          child = this[index];
+          if (item === child) {
+            return index;
+          }
+        }
+        return -1;
       };
 
       List.prototype.push = function(item) {
-        this.create(item);
+        item = this.create(item);
         this.check(item);
         this[this._length] = item;
         this._length++;
         item.appendTo(this.node);
+        item.parentList = this;
+        this.emit("add", item);
         return this._length;
       };
 
@@ -417,12 +444,14 @@
         item = this[this._length];
         delete this[this._length];
         item.remove();
+        this.emit("remove", item);
+        item.parentList = null;
         return item;
       };
 
       List.prototype.unshift = function(item) {
         var index, _i, _ref;
-        this.create(item);
+        item = this.create(item);
         this.check(item);
         if (this._length === 0) {
           item.appendTo(this.node);
@@ -435,7 +464,21 @@
         this[0] = item;
         this._length += 1;
         item.prependTo(this.node);
+        this.emit("add", item);
+        item.parentList = this;
         return this._length;
+      };
+
+      List.prototype.removeItem = function(item) {
+        var index;
+        index = this.indexOf(item);
+        if (index < 0) {
+          return index;
+        }
+        this.splice(index, 1);
+        item.parentList = null;
+        this.emit("remove", item);
+        return item;
       };
 
       List.prototype.shift = function() {
@@ -445,19 +488,23 @@
           this[index] = this[index + 1];
         }
         result.remove();
+        this.emit("remove", result);
+        result.parentList = null;
         return result;
       };
 
       List.prototype.splice = function() {
-        var achor, count, increase, index, item, offset, origin, result, toAdd, toAddFinal, _i, _j, _k, _l, _len, _len1, _len2, _m, _ref, _ref1;
+        var achor, count, increase, index, item, offset, origin, result, toAdd, toAddFinal, _i, _j, _k, _l, _len, _len1, _len2, _m, _n, _ref, _ref1, _ref2, _ref3;
         index = arguments[0], count = arguments[1], toAdd = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
         result = [];
-        if (!count || index + count > this._length) {
+        if (typeof count === "undefined" || index + count > this._length) {
           count = this._length - index;
         }
         for (offset = _i = 0; 0 <= count ? _i < count : _i > count; offset = 0 <= count ? ++_i : --_i) {
           item = this[index + offset];
           item.remove();
+          this.emit("remove", item);
+          item.parentList = null;
           result.push(item);
         }
         toAddFinal = (function() {
@@ -474,20 +521,30 @@
             item = toAddFinal[_j];
             this.check(item);
             item.prependTo(this.node);
+            this.emit("add", item);
+            item.parentList = this;
           }
         } else {
           achor = this[index - 1];
           for (_k = 0, _len1 = toAddFinal.length; _k < _len1; _k++) {
             item = toAddFinal[_k];
-            this.checkitem;
+            this.check(item);
             item.after(achor);
+            this.emit("add", item);
+            item.parentList = this;
           }
         }
         increase = toAddFinal.length - count;
-        for (origin = _l = _ref = index + count, _ref1 = this._length; _ref <= _ref1 ? _l < _ref1 : _l > _ref1; origin = _ref <= _ref1 ? ++_l : --_l) {
-          this[origin + increase] = this[origin];
+        if (increase < 0) {
+          for (origin = _l = _ref = index + count, _ref1 = this._length; _ref <= _ref1 ? _l < _ref1 : _l > _ref1; origin = _ref <= _ref1 ? ++_l : --_l) {
+            this[origin + increase] = this[origin];
+          }
+        } else if (increase > 0) {
+          for (origin = _m = _ref2 = this._length - 1, _ref3 = index + count - 1; _ref2 <= _ref3 ? _m < _ref3 : _m > _ref3; origin = _ref2 <= _ref3 ? ++_m : --_m) {
+            this[origin + increase] = this[origin];
+          }
         }
-        for (offset = _m = 0, _len2 = toAddFinal.length; _m < _len2; offset = ++_m) {
+        for (offset = _n = 0, _len2 = toAddFinal.length; _n < _len2; offset = ++_n) {
           item = toAddFinal[offset];
           this[index + offset] = item;
         }
@@ -522,7 +579,7 @@
         }).call(this);
       };
 
-      List.prototype.sync = function(arr, converter) {
+      List.prototype.syncWith = function(arr, converter) {
         var finalArr, index, item, _, _i, _j, _k, _len, _len1, _ref;
         if (converter == null) {
           converter = function(item) {
@@ -534,11 +591,13 @@
           item = arr[index];
           _ = converter(item);
           if (!(_ instanceof Widget)) {
-            throw "sync means invalid item in arr index:" + index;
+            throw "sync of invalid widget at index:" + index;
           }
           finalArr.push(_);
         }
         for (index = _j = 0, _ref = this._length; 0 <= _ref ? _j < _ref : _j > _ref; index = 0 <= _ref ? ++_j : --_j) {
+          this.emit("remove", this[index]);
+          this[index].parentList = null;
           delete this[index];
         }
         this.node.innerHTML = "";
@@ -546,6 +605,8 @@
           item = finalArr[index];
           this[index] = item;
           item.appendTo(this.node);
+          this.emit("add", item);
+          item.parentList = this;
         }
         this._length = finalArr.length;
         return this;

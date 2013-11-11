@@ -26,18 +26,67 @@
         return this;
       };
 
-      EventEmitter.prototype.emit = function() {
-        var event, handler, params, _i, _len, _ref, _results;
-        event = arguments[0], params = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-        if (this.events[event]) {
-          _ref = this.events[event];
-          _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            handler = _ref[_i];
-            _results.push(handler.callback.apply(handler.option && handler.option.context || this, params));
-          }
-          return _results;
+      EventEmitter.prototype.removeListener = function(event, listener) {
+        var handler, handlers, index, _i, _len;
+        handlers = this.events[event];
+        if (!handlers) {
+          return false;
         }
+        for (index = _i = 0, _len = handlers.length; _i < _len; index = ++_i) {
+          handler = handlers[index];
+          if (handler.callback === listener) {
+            handlers[index] = null;
+          }
+        }
+        this.events[event] = handlers.filter(function(item) {
+          return item;
+        });
+        return this;
+      };
+
+      EventEmitter.prototype.removeAllListeners = function(event) {
+        if (event) {
+          this.events[event] = [];
+        } else {
+          this.events = {};
+        }
+        return this;
+      };
+
+      EventEmitter.prototype.emit = function() {
+        var event, handler, handlers, index, once, params, _i, _len;
+        event = arguments[0], params = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+        handlers = this.events[event];
+        if (handlers) {
+          once = false;
+          for (index = _i = 0, _len = handlers.length; _i < _len; index = ++_i) {
+            handler = handlers[index];
+            handler.callback.apply(handler.option && handler.option.context || this, params);
+            if (handler.option.once) {
+              once = true;
+            }
+          }
+          if (once) {
+            this.events[event] = handlers.filter(function(item) {
+              return item.option.once;
+            });
+          }
+        }
+        return this;
+      };
+
+      EventEmitter.prototype.once = function(event, callback, context) {
+        var handler, handlers;
+        handlers = this.events[event] = this.events[event] || [];
+        handler = {
+          callback: callback,
+          option: {
+            context: context,
+            once: true
+          }
+        };
+        handlers.push(handler);
+        return this;
       };
 
       return EventEmitter;
