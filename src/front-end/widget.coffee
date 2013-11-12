@@ -256,8 +256,7 @@
             @_length++
             item.appendTo @node
             item.parentList = this
-            @emit "add",item
-            return @_length
+            @_attach(item)
         pop:()->
             if @_length is 0
                 return null
@@ -265,8 +264,7 @@
             item = @[@_length]
             delete @[@_length]
             item.remove()
-            @emit "remove",item
-            item.parentList = null
+            @_detach(item)
             return item
         unshift:(item)->
             item = @create(item)
@@ -280,23 +278,20 @@
             @[0] = item
             @_length += 1
             item.prependTo @node
-            @emit "add",item
-            item.parentList = this
+            @_attach(item)
             return @_length
         removeItem:(item)->
             index = @indexOf(item)
             if index < 0 then return index
             @splice(index,1)
-            item.parentList = null
-            @emit "remove",item
+            @_detach item
             return item
         shift:()->
             result = @[0]
             for index in [0...@_length-1]
                 @[index] = @[index+1]
             result.remove()
-            @emit "remove",result
-            result.parentList = null
+            @_detach(result)
             return result
         splice:(index,count,toAdd...)->
             result = []
@@ -306,8 +301,7 @@
             for offset in [0...count]
                 item = @[index+offset]
                 item.remove()
-                @emit "remove",item
-                item.parentList = null
+                @_detach item
                 result.push item
             # make DOM match result
             toAddFinal = (@create item for item in toAdd)
@@ -315,15 +309,13 @@
                 for item in toAddFinal
                     @check item
                     item.prependTo @node
-                    @emit "add",item
-                    item.parentList = this
+                    @_attach(item)
             else
                 achor = @[index-1]
                 for item in toAddFinal
                     @check item
                     item.after achor
-                    @emit "add",item
-                    item.parentList = this
+                    @_attach item
                     
             # now make list match DOM
             # I make the hole left by remove "count" items
@@ -359,17 +351,21 @@
                     throw "sync of invalid widget at index:#{index}"
                 finalArr.push _
             for index in [0...@_length]
-                @emit "remove",this[index]
-                this[index].parentList = null
+                @_detach(this[index])
                 delete this[index]
             @node.innerHTML = ""
             for item,index in finalArr
                 @[index] = item
                 item.appendTo @node
-                @emit "add",item
-                item.parentList = this
+                @_attach(item)
             @_length = finalArr.length
             return this
+        _attach:(item)->
+            @emit "add",item
+            @item.parentList = this
+        _detach:(item)->
+            @emit "remove",item
+            @item.parentList = null
         sort:(judge)->
             @sync @toArray().sort(judge)
     Widget.List = List
