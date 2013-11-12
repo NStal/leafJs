@@ -809,8 +809,7 @@
         this._length++;
         item.appendTo(this.node);
         item.parentList = this;
-        this.emit("add", item);
-        return this._length;
+        return this._attach(item);
       };
 
       List.prototype.pop = function() {
@@ -822,8 +821,7 @@
         item = this[this._length];
         delete this[this._length];
         item.remove();
-        this.emit("remove", item);
-        item.parentList = null;
+        this._detach(item);
         return item;
       };
 
@@ -842,8 +840,7 @@
         this[0] = item;
         this._length += 1;
         item.prependTo(this.node);
-        this.emit("add", item);
-        item.parentList = this;
+        this._attach(item);
         return this._length;
       };
 
@@ -854,8 +851,7 @@
           return index;
         }
         this.splice(index, 1);
-        item.parentList = null;
-        this.emit("remove", item);
+        this._detach(item);
         return item;
       };
 
@@ -866,8 +862,7 @@
           this[index] = this[index + 1];
         }
         result.remove();
-        this.emit("remove", result);
-        result.parentList = null;
+        this._detach(result);
         return result;
       };
 
@@ -881,8 +876,7 @@
         for (offset = _i = 0; 0 <= count ? _i < count : _i > count; offset = 0 <= count ? ++_i : --_i) {
           item = this[index + offset];
           item.remove();
-          this.emit("remove", item);
-          item.parentList = null;
+          this._detach(item);
           result.push(item);
         }
         toAddFinal = (function() {
@@ -899,8 +893,7 @@
             item = toAddFinal[_j];
             this.check(item);
             item.prependTo(this.node);
-            this.emit("add", item);
-            item.parentList = this;
+            this._attach(item);
           }
         } else {
           achor = this[index - 1];
@@ -908,8 +901,7 @@
             item = toAddFinal[_k];
             this.check(item);
             item.after(achor);
-            this.emit("add", item);
-            item.parentList = this;
+            this._attach(item);
           }
         }
         increase = toAddFinal.length - count;
@@ -974,8 +966,7 @@
           finalArr.push(_);
         }
         for (index = _j = 0, _ref = this._length; 0 <= _ref ? _j < _ref : _j > _ref; index = 0 <= _ref ? ++_j : --_j) {
-          this.emit("remove", this[index]);
-          this[index].parentList = null;
+          this._detach(this[index]);
           delete this[index];
         }
         this.node.innerHTML = "";
@@ -983,11 +974,20 @@
           item = finalArr[index];
           this[index] = item;
           item.appendTo(this.node);
-          this.emit("add", item);
-          item.parentList = this;
+          this._attach(item);
         }
         this._length = finalArr.length;
         return this;
+      };
+
+      List.prototype._attach = function(item) {
+        this.emit("add", item);
+        return item.parentList = this;
+      };
+
+      List.prototype._detach = function(item) {
+        this.emit("remove", item);
+        return item.parentList = null;
       };
 
       List.prototype.sort = function(judge) {

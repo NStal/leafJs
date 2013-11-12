@@ -362,10 +362,10 @@
             return this
         _attach:(item)->
             @emit "add",item
-            @item.parentList = this
+            item.parentList = this
         _detach:(item)->
             @emit "remove",item
-            @item.parentList = null
+            item.parentList = null
         sort:(judge)->
             @sync @toArray().sort(judge)
     Widget.List = List
