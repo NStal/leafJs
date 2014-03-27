@@ -39,7 +39,7 @@
                     if handler.option.once
                         once = true
                 if once
-                    @events[event] = handlers.filter (item)->item.option.once
+                    @events[event] = handlers.filter (item)->item.option.once isnt true
             return this
         once:(event,callback,context)->
             handlers = @events[event] = @events[event] || []

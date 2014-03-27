@@ -4,14 +4,14 @@ FRONTCOFFEE = base.coffee util.coffee widget.coffee templateManager.coffee apiMa
 FRONTJS = $(FRONTCOFFEE:.coffee=.js)
 all : compiled/leaf.js
 
-compiled/leaf.js : $(FRONTJS)
+compiled/leaf.js : $(FRONTCOFFEE)
 	@[ -f compiled/leaf.js ] && rm compiled/leaf.js  || echo clean
-	@for jsfile in $(FRONTJS); do cat compiled/front-end/$$jsfile >> compiled/leaf.js; done
+	@cd src;coffee -j ../compiled/leaf.js -c $(FRONTCOFFEE);cd ..;
 	@echo done
 
 $(FRONTJS) : %.js : %.coffee
 	@echo generate $@
-	$(COFFEE) -o compiled/front-end/ src/front-end/$<
+	$(COFFEE) -o compiled/part/ src/front-end/$<
 
 $(FRONTCOFFEE):
 

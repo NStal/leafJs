@@ -1,0 +1,13 @@
+* add handy data binds for update template
+** data-render-text
+** data-render-html
+** data-render-class
+* EventEmitter can bubble events.
+** bubble(who,eventName,processor)
+* better structure and remove unused code
+* refactor ApiFactory
+* new project folder structure
+* write grunt for compiles
+* write tests
+* merge leaf require
+* how about template rendering

@@ -214,6 +214,10 @@
             if target instanceof Leaf.Widget
                 target.node.innerHTML = ""
             @appendTo(target)
+        destroy:()->
+            @UI = null
+            @node = null
+            @removeAllListeners()
     class List extends Widget
         constructor:(template,create)->
             super template
@@ -222,6 +226,7 @@
                 get:()=>
                     return @_length
                 set:(value)=>
+                    toRemove = []
                     if value > @_length
                         throw "can't asign length larger than the origin"
                     if value < 0
@@ -229,9 +234,11 @@
                     if typeof value isnt "number"
                         throw new TypeError()
                     for index in [value...@length]
-                        @[index].remove()
+                        toRemove.push @[index]
                         delete @[index]
                     @_length = value
+                    for item in toRemove
+                        @_detach(item)
                     
             })
         init:(create)->
@@ -263,7 +270,6 @@
             @_length -= 1
             item = @[@_length]
             delete @[@_length]
-            item.remove()
             @_detach(item)
             return item
         unshift:(item)->
@@ -272,7 +278,9 @@
             if @_length is 0
                 item.appendTo @node
                 @[0] = item
-                return 1
+                @_length = 1
+                @_attach(item)
+                return
             for index in [@_length..1]
                 @[index] = @[index-1]
             @[0] = item
@@ -284,24 +292,23 @@
             index = @indexOf(item)
             if index < 0 then return index
             @splice(index,1)
-            @_detach item
             return item
         shift:()->
             result = @[0]
             for index in [0...@_length-1]
                 @[index] = @[index+1]
-            result.remove()
+            @_length -= 1
             @_detach(result)
             return result
         splice:(index,count,toAdd...)->
             result = []
+            toRemoves = []
             # check index
             if typeof count is "undefined" or index + count > @_length
                 count = @_length - index
             for offset in [0...count]
                 item = @[index+offset]
-                item.remove()
-                @_detach item
+                toRemoves.push item
                 result.push item
             # make DOM match result
             toAddFinal = (@create item for item in toAdd)
@@ -335,6 +342,8 @@
             for item,offset in toAddFinal
                 @[index+offset] = item
             @_length += increase
+            for item in toRemoves
+                @_detach item
             return result
         slice:(from,to)->
             return @toArray().slice(from,to)
@@ -361,11 +370,12 @@
             @_length = finalArr.length
             return this
         _attach:(item)->
-            @emit "add",item
             item.parentList = this
+            @emit "child/add",item
         _detach:(item)->
-            @emit "remove",item
             item.parentList = null
+            item.remove()
+            @emit "child/remove",item
         sort:(judge)->
             @sync @toArray().sort(judge)
     Widget.List = List
