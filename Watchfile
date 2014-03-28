@@ -4,5 +4,6 @@
 //{extname}  /css/style.less => .less
 //{directory} /css/style.less => /css/
 exports.watchList = [
-[/^.*coffee$/,'make']
+[/^src\/.*coffee$/,'make']
+,[/^test\/.*coffee$/,'coffee -c {fullpath}']
 ]

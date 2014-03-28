@@ -35,8 +35,6 @@
                     @templates[tid] = template
                     if @_isRequirementComplete()
                         @_ready()
-
-                         
             )
         _ready:()->
             @emit "ready",@templates
@@ -79,7 +77,10 @@
                     ,@timeout)
                     XHR.onreadystatechange = ()->
                         if @done
-                            return 
+                            return
+                        if @readyState is 0
+                            callback new Error "fail to load template"
+                            return
                         if @readyState is 4 
                             @done = true
                             if @status in [200,302,304]
