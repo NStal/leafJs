@@ -7,17 +7,29 @@
             @templates = {}
             @suffix = ".html"
             @timeout = 10000 #default timeout
+            @enableCache = false
+            @cacheName = "templateManagerCache"
         use: (tids...) ->
             @tids.push.apply @tids,tids
         start:()->
             setTimeout @_start.bind(this),0
         _start:() ->
+            if @enableCache
+                caches = @_fromCacheAll()
+                console.debug "from cache",caches
+                for tid in @tids
+                    @templates[tid] = caches[tid]
+                if @_isRequirementComplete()
+                    @_ready()
+                    return this
+                    
             all = @_fromDomAll()
             for tid in @tids
                 @templates[tid] = all[tid]
             if @_isRequirementComplete()
                 @_ready()
                 return this
+                
             remain = @_getNotCompleteRequirements()
             remainTemplates = @_fromDomForEach(remain)
             for tid in remain
@@ -37,6 +49,8 @@
                         @_ready()
             )
         _ready:()->
+            if @enableCache and window.localStorage
+                window.localStorage.setItem @cacheName,JSON.stringify @templates
             @emit "ready",@templates
         _getNotCompleteRequirements:()->
             (tid for tid in @tids when !@templates[tid])
@@ -46,7 +60,19 @@
                     return false
             return true
         #return templatesJson or {} if not found
-        _fromDomAll:() ->
+        _fromCacheAll:()->
+            if not window.localStorage
+                return {}
+            info = window.localStorage.getItem(@cacheName)
+            if not info
+                return {}
+            try
+                templates = JSON.parse(info)
+                return templates
+            catch e
+                return {}
+                
+        _fromDomAll:()->
             try
                 return JSON.parse(document.getElementById("leaf-templates").innerHTML)
             catch e

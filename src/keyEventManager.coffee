@@ -1,5 +1,6 @@
 class KeyEventManager extends EventEmitter
     @stack = []
+    @instances = []
     @disable = ()->
         @isActive = true
     @enable = ()->
@@ -38,7 +39,7 @@ class KeyEventManager extends EventEmitter
         @isActive = false
     master:()->
         if KeyEventManager.current is this
-            console.error "already mastered"
+            console.warn "already mastered"
             console.trace()
             return
         @active()
@@ -48,9 +49,9 @@ class KeyEventManager extends EventEmitter
         KeyEventManager.current = this
     unmaster:()->
         if KeyEventManager.current isnt this
-            console.error "current input are not in master"
+            console.warn "current KeyEventManager are not in master"
             console.trace()
-            return
+            return false
         
         @deactive()
         prev = null
@@ -58,7 +59,7 @@ class KeyEventManager extends EventEmitter
             prev = KeyEventManager.stack.pop()
             prev.active()
         KeyEventManager.current = prev
-        KeyEventManager.instances = []
+        return true
 Key = {}
 Key["0"]=48;
 Key["1"]=49;

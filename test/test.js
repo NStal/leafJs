@@ -78,17 +78,135 @@
     return ok(!recieveEvent);
   });
 
+  test("EventEmitter.mixin should works as EventEmitter", function() {
+    var em, emchild, handler, obj, obj2, recieveEvent, someone;
+    obj = {};
+    em = Leaf.EventEmitter.mixin(obj);
+    recieveEvent = false;
+    handler = function() {
+      return recieveEvent = true;
+    };
+    em.on("event", handler);
+    em.trigger("event");
+    ok(recieveEvent);
+    recieveEvent = false;
+    em.removeListener("event", handler);
+    em.trigger("event");
+    ok(!recieveEvent);
+    em.on("eventA", handler);
+    em.removeAllListeners("eventA");
+    em.trigger("event");
+    ok(!recieveEvent);
+    em.once("event", handler);
+    em.trigger("event");
+    ok(recieveEvent);
+    recieveEvent = false;
+    em.trigger("event");
+    ok(!recieveEvent);
+    recieveEvent = false;
+    obj2 = {};
+    emchild = Leaf.EventEmitter.mixin(obj2);
+    em.bubble(emchild, "child");
+    em.on("child", function(a1, a2) {
+      recieveEvent = true;
+      ok(a1 === 1);
+      return ok(a2 === 2);
+    });
+    emchild.emit("child", 1, 2);
+    ok(recieveEvent);
+    recieveEvent = false;
+    em.stopBubble(emchild, "child");
+    emchild.emit("child", 1, 2);
+    ok(!recieveEvent);
+    someone = {};
+    recieveEvent = false;
+    em.listenBy(someone, "event", function() {
+      return recieveEvent = true;
+    });
+    em.emit("event");
+    ok(recieveEvent);
+    ok(em._events["event"].length === 1);
+    em.stopListenBy(someone);
+    ok(em._events["event"].length === 0);
+    recieveEvent = false;
+    em.emit("event");
+    return ok(!recieveEvent);
+  });
+
+  module("Util tests");
+
+  test("Util tests", function() {
+    var c, o;
+    ok(Leaf.Util.isHTMLElement(document.createElement("div")));
+    ok(!Leaf.Util.isHTMLElement(document.createTextNode("yes!")));
+    ok === Leaf.Util.isHTMLNode(document.createTextNode("yes!"));
+    ok(Leaf.Util.capitalize("abc") === "Abc");
+    o = {
+      a: 5,
+      b: {},
+      c: [1, 2, 3]
+    };
+    c = Leaf.Util.clone(o);
+    ok(c.a === o.a);
+    ok(c.b !== o.b);
+    ok(c.c.length === 3);
+    return ok(Leaf.Util.compare({
+      a: 5,
+      b: [
+        1, 2, {
+          k: 2
+        }
+      ]
+    }, {
+      a: 5,
+      b: [
+        1, 2, {
+          k: 2
+        }
+      ]
+    }));
+  });
+
+  module("KeyEventManager");
+
+  test("KeyEventManager test", function() {
+    var KeyEventManager, input1, input2, km, km2;
+    KeyEventManager = Leaf.KeyEventManager;
+    km = new KeyEventManager();
+    km2 = new KeyEventManager();
+    input1 = document.createElement("input");
+    input2 = document.createElement("input");
+    km.attachTo(input1);
+    km2.attachTo(input2);
+    km.master();
+    km2.master();
+    ok(KeyEventManager.stack.length === 1);
+    ok(KeyEventManager.current === km2);
+    km2.unmaster();
+    ok(KeyEventManager.stack.length === 0);
+    ok(KeyEventManager.current === km);
+    km.unmaster();
+    ok(KeyEventManager.stack.length === 0);
+    ok(!KeyEventManager.current);
+    km.master();
+    km2.master();
+    ok(km.isActive = true);
+    ok(km2.isActive = true);
+    KeyEventManager.disable();
+    KeyEventManager.enable();
+    return ok(!km.unmaster());
+  });
+
   module("Model and Collection");
 
   test("Basic model should work", function() {
-    var TestCollection, TestModel, change, changeAgain, collection, data, e, error, model, modelSameId, recieveEvent, result;
+    var TestCollection, TestModel, change, changeAgain, changed, collection, data, desCounter, destroyed, e, error, id, json, length, m1, m2, m3, model, modelSameId, obj, prop, recieveEvent, result;
     TestModel = (function(_super) {
       __extends(TestModel, _super);
 
       function TestModel() {
         TestModel.__super__.constructor.call(this);
-        this.declare("id");
-        this.declare("name");
+        this.declare(["id", "name"]);
       }
 
       return TestModel;
@@ -257,16 +375,177 @@
     });
     model.data.name = "newName";
     ok(change);
-    return ok(changeAgain);
+    ok(changeAgain);
+    model = new TestModel();
+    ok(!model.data.id);
+    ok(!model.data.name);
+    model.defaults({
+      id: 100,
+      name: "100"
+    });
+    ok(model.id === 100);
+    ok(model.name === "100");
+    model = new TestModel();
+    model.id = 99;
+    model.defaults({
+      id: 100,
+      name: "100"
+    });
+    ok(model.id === 99);
+    ok(model.name === "100");
+    model.reset();
+    ok(model.id === 100);
+    ok(model.name === "100");
+    model = new TestModel();
+    ok("theName" === model.get("name", "theName"));
+    changed = false;
+    model.on("change/name", function() {
+      return changed = true;
+    });
+    model.set("name", "name");
+    ok(changed);
+    changed = false;
+    model.set("name", "name");
+    ok(changed = true);
+    changed = false;
+    model.name = "name";
+    ok(changed === false);
+    ok(model.name === "name");
+    model.preset("name", "changedName");
+    ok(model.name === "changedName");
+    model.undo();
+    ok(model.name === "name");
+    model.preset("name", "changedName");
+    model.preset("id", "changedId");
+    model.undo("name");
+    ok(model.name === "name");
+    ok(model.id === "changedId");
+    model.confirm();
+    ok(model.id === "changedId");
+    ok(model.name === "name");
+    model.undo();
+    ok(model.id === "changedId");
+    ok(model.name === "name");
+    json = model.toJSON();
+    ok(json.id === "changedId");
+    ok(json.name === "name");
+    length = 0;
+    for (prop in json) {
+      length++;
+    }
+    ok(length === 2);
+    model.set("id", [
+      1, 2, {
+        toJSON: function() {
+          return 100;
+        }
+      }
+    ]);
+    console.debug(model.id, "yes!");
+    json = model.toJSON();
+    console.debug(json);
+    ok(json.id[2] === 100);
+    ok(json.id.length === 3);
+    model.retain();
+    destroyed = false;
+    model.on("destroy", function() {
+      return destroyed = true;
+    });
+    model.release();
+    ok(destroyed);
+    ok(model.isDestroy);
+    m1 = new TestModel();
+    m1.data = {
+      id: 1,
+      name: "m1"
+    };
+    m2 = new TestModel();
+    m2.data = {
+      id: 2,
+      name: "m2"
+    };
+    m3 = new TestModel();
+    collection = new TestCollection();
+    collection.setId("id");
+    collection.add(m1);
+    collection.add(m2);
+    ok(collection.get(m1) === m1);
+    ok(collection.get(m1.id) === m1);
+    ok(!collection.get({}));
+    ok(!collection.get(m3));
+    ok(collection.find().length === 2);
+    ok(collection.find({}).length === 2);
+    ok(collection.find({
+      id: 1
+    }).length === 1);
+    ok(collection.find({
+      invalid: 1
+    }).length === 0);
+    desCounter = 0;
+    collection.on("remove", function() {
+      return desCounter++;
+    });
+    collection.destroy();
+    ok(desCounter === 2);
+    ok(collection.length === 0);
+    model = new TestModel();
+    json = model.toJSON();
+    length = 0;
+    for (prop in json) {
+      length++;
+    }
+    ok(length === 0);
+    json = model.toJSON({
+      complete: true
+    });
+    for (prop in json) {
+      length++;
+    }
+    ok(length === 2);
+    obj = {
+      a: 5
+    };
+    model.id = obj;
+    ok(model.id !== obj);
+    id = model.id;
+    ok(id !== model.id);
+    id.a = 6;
+    ok(model.id.a === 5);
+    id = model.ref("id");
+    ok(id === model.ref("id"));
+    id.a = 6;
+    return ok(model.id.a === 6);
   });
 
   module("EnhancedWidget");
 
   test("basic widget test", function() {
-    var widget;
+    var elemWidget, richWidget, strWidget, widget;
     widget = new Leaf.Widget("#widget-a");
     ok(widget);
-    return ok(widget.node.id === "widget-a");
+    ok(widget.node.id === "widget-a");
+    strWidget = new Leaf.Widget("<div data-id='self'><div data-id='child'></div></div>");
+    ok(strWidget.UI.self === strWidget.node);
+    ok(strWidget.UI.child);
+    ok(strWidget.node.contains(strWidget.UI.child));
+    elemWidget = new Leaf.Widget(document.querySelector("#widget-b"));
+    ok(elemWidget.node);
+    ok(!(new Leaf.Widget()).isValid);
+    elemWidget.initTemplate("<div id='widget-b'>text<div data-id='newChild'></div></div>");
+    ok(elemWidget.node.parentElement === document.body);
+    ok(elemWidget.node$.text() === "text");
+    ok(elemWidget.UI.newChild);
+    richWidget = new Leaf.Widget("<div><widget data-widget='childWidget'></widget></div>");
+    richWidget.childWidget = new Leaf.Widget();
+    richWidget.initSubWidgets();
+    ok(richWidget.childWidget.node.parentElement === richWidget.node);
+    richWidget.appendTo(elemWidget);
+    ok(richWidget.node.parentElement === elemWidget.node);
+    richWidget.appendTo(document.body);
+    ok(richWidget.node.parentElement === document.body);
+    richWidget.replace(elemWidget);
+    ok(richWidget.node.parentElement === document.body);
+    return ok(!elemWidget.node.parentElement);
   });
 
   test("enhanced widget test", function() {

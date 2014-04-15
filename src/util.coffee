@@ -23,21 +23,24 @@ Util.getBrowserInfo = ()->
     return {name:M[0],version:M[1],mobile:Util.isMobile()}
 Util.browser = Util.getBrowserInfo()
 Util.capitalize = (string)-> string.charAt(0).toUpperCase() + string.slice(1);
-Util.clone = (x)-> 
+Util.clone = (x,stack = [])-> 
     if x is null or x is undefined
         return x;
     if typeof x.clone is "function"
         return x.clone();
-    if x.constructor == Array
+    if x in stack
+        throw new Error "clone recursive object"
+    stack.push x
+    if x instanceof Array
         r = [];
         for item in x
-            r.push Util.clone(item)
+            r.push Util.clone(item,stack)
         return r; 
-    if typeof x is "Object"
+    if typeof x is "object"
         obj = {}
         for prop of x
-            obj[prop] = Util.clone(x[prop])
-            return obj
+            obj[prop] = Util.clone(x[prop],stack)
+        return obj
     return x;
 Util.compare = (x,y)->
     if x is y

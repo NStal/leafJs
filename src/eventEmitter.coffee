@@ -1,11 +1,15 @@
 #An simple version of eventEmitter
 class EventEmitter
-    constructor: () ->
+    @mixin = (obj)->
+        em = new EventEmitter()
+        for prop of em
+            obj[prop] = em[prop]
+        return obj
+    constructor: ()->
         @_events = {}
         @_bubbles = []
         #alias
         @trigger = @emit
-        @bind = @on
     on:(event,callback,context)->
         handlers = @_events[event] = @_events[event] || []
         handler = 
@@ -81,7 +85,7 @@ class EventEmitter
         handlers = @_events[event]
         handler = 
             callback:callback
-            context:context
+            context:context or who
             owner:who
         handlers.push handler
         return this
@@ -90,8 +94,8 @@ class EventEmitter
             handlers = @_events[event]
             if not handlers then continue
             for handler,index in handlers
-                if handler.owner is who
+                if handler.owner and handler.owner is who
                     handlers[index] = null
             @_events[event] = handlers.filter (item)->item
-            return this
+        return this
 Leaf.EventEmitter = EventEmitter

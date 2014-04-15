@@ -7,6 +7,7 @@ class Widget extends Leaf.EventEmitter
         @nodes = []
         @UI = {}
         @initTemplate(@template)
+        @_models = []
     # make template into HTMLElement
     # if template is html strings
     # it will parsed into HTMLElement
@@ -30,20 +31,21 @@ class Widget extends Leaf.EventEmitter
             else
                 tempNode = document.createElement("div");
                 tempNode.innerHTML = template.trim()
-                @node = tempNode.children[0] 
+                @node = tempNode.children[0]
                 for node in tempNode.children
                     @nodes.push(node)
                     node.widget = this
         else if Util.isHTMLNode(template)
-                @node = template
-                @node.widget = this
-                @nodes.push(template)
-                
+            @node = template
+            @node.widget = this
+            @nodes.push(template)
+        
         # insert tr or td tag into div or something
         # may cause failure to generate elements
         # but we only handle it in latter version
         if not @node
-            throw "invalid template #{template}"
+            @isValid = false
+            return
         if typeof $ is "function"
             @$node = $(@node)
             @node$ = @$node
@@ -71,10 +73,10 @@ class Widget extends Leaf.EventEmitter
                 if this[name] instanceof Widget
                     this[name].replace widget
                 else if this[name]
-                    console.error "Widget named #{name} isnt isn't instanceof Widget"
+                    console.warn "Widget named #{name} isnt isn't instanceof Widget"
                     console.trace()
                 else
-                    console.error "Widget named",name,"not exists for",widget
+                    console.warn "Widget named",name,"not exists for",widget
                     console.trace()
     initUI:()->
         if not @nodes
@@ -117,13 +119,12 @@ class Widget extends Leaf.EventEmitter
                 target.node.appendChild(node)
     replace:(target)->
         @before target
-        if target instanceof Leaf.Widget
+        if target instanceof Widget
             target.remove()
             return
         if Util.isHTMLElement(target) and target.parentElement
             target.parentElement.removeChild target
             return
-            
             
     prependTo:(target)->
         if Util.isHTMLElement(target)
@@ -185,6 +186,11 @@ class Widget extends Leaf.EventEmitter
         if target instanceof Leaf.Widget
             target.node.innerHTML = ""
         @appendTo(target)
+    use:(model)->
+        @_models.push model
+        model.listenBy this,"destroy",()=>
+            @_models = @_models.filter (item)->item isnt model
+        model.retain()
     destroy:()->
         # prevent recursive
         if @isDestroy
@@ -193,6 +199,9 @@ class Widget extends Leaf.EventEmitter
         # emit before clean eventemitter
         @emit "destroy"
         super()
+        for model in @_models
+            model.release()
+            model.stopListenBy(this)
         @UI = null
         @node = null
         @node$ = null
@@ -224,6 +233,12 @@ class List extends Widget
         @create = create or @create or (item)=>return item
         @_length = 0
         @node.innerHTML = ""
+    map:(args...)->
+        [].map.apply(this,args)
+    some:(args...)->
+        [].some.apply(this,args)
+    forEach:(args...)->
+        [].forEach.apply(this,args)
     check:(item)->
         if item not instanceof Widget
             throw "Leaf List only accept widget as element"
@@ -241,7 +256,6 @@ class List extends Widget
         @[@_length]=item
         @_length++
         item.appendTo @node
-        item.parentList = this
         @_attach(item)
     pop:()->
         if @_length is 0
@@ -331,32 +345,43 @@ class List extends Widget
             handler(item)
     toArray:()->
         return (item for item in this)
-    syncWith:(arr,converter = (item)->item)->
-        finalArr = []
-        for item,index in arr
-            _ = converter(item)
-            if not (_ instanceof Widget)
-                throw "sync of invalid widget at index:#{index}"
-            finalArr.push _
-        for index in [0...@_length]
-            @_detach(this[index])
-            delete this[index]
-        @node.innerHTML = ""
-        for item,index in finalArr
-            @[index] = item
-            item.appendTo @node
-            @_attach(item)
-        @_length = finalArr.length
-        return this
+#    syncWith:(arr,converter = (item)->item)->
+#        finalArr = []
+#        for item,index in arr
+#            _ = converter(item)
+#            if not (_ instanceof Widget)
+#                throw "sync of invalid widget at index:#{index}"
+#            finalArr.push _
+#        for index in [0...@_length]
+#            @_detach(this[index])
+#            delete this[index]
+#        @node.innerHTML = ""
+#        for item,index in finalArr
+#            @[index] = item
+#            item.appendTo @node
+#            @_attach(item)
+#        @_length = finalArr.length
+#        return this
     _attach:(item)->
         item.parentList = this
+        item.listenBy this,"destroy",()=>
+            @removeItem item
         @emit "child/add",item
     _detach:(item)->
         item.parentList = null
-        item.remove()
+        for node in item.nodes
+            if node and node.parentElement is @node
+                @node.removeChild node
+        # can use item.remove method
+        # because an if remove is overwritten then things won't work
+        # and this is likely to be the case
+        item.stopListenBy this
         @emit "child/remove",item
     sort:(judge)->
         @sync @toArray().sort(judge)
+    destroy:()->
+        @length = 0
+        super()
 Widget.List = List
 Widget.makeList = (node,create)=>
     return new Widget.List(node,create)

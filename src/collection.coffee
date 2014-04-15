@@ -13,11 +13,26 @@ class Collection extends EventEmitter
         if @models.length isnt 0
             throw new Error "set id should before collection has any content"
         @id = id
+    find:(obj)->
+        if not obj
+            return @models.slice()
+        return @models.filter (item)->
+            for prop of obj
+                if item.data[prop] isnt obj[prop]
+                    return false
+            return true
     get:(model)->
         target = null
+        if @id
+            # if model check id else  make model as id
+            if model instanceof Model
+                id = model.get(@id)
+            else
+                id = model
         @models.some (old)=>
             if @id
-                if old.get(@id) is model.get(@id)
+                # if model check id else  make model as id
+                if old.get(@id) is id
                     target = old
                     return true
                 return false
@@ -65,4 +80,7 @@ class Collection extends EventEmitter
             @emit "change/model/#{key}",model,key,value
     _detachModel:(model)->
         model.stopListenBy this
+    destroy:()->
+        @empty()
+        super()
 Leaf.Collection = Collection

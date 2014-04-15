@@ -1,4 +1,4 @@
-class EnhancedWidget extends Widget
+class Widget extends Widget
     @attrs = ["text","html","class","value","attribute"]
     constructor:(template)->
         super template
@@ -20,7 +20,7 @@ class EnhancedWidget extends Widget
             @renderData = oldModel.data
             oldModel.destroy()
     initRenderData:()->
-        attrs = EnhancedWidget.attrs
+        attrs = Widget.attrs
         selector = (attrs.map (item)->"[data-#{item}]").join(",")
         for node in @nodes
             elems = [].slice.call node.querySelectorAll selector
@@ -28,7 +28,7 @@ class EnhancedWidget extends Widget
             for elem in elems
                 @applyRenderRole(elem)
     applyRenderRole:(elem)->
-        attrs = EnhancedWidget.attrs
+        attrs = Widget.attrs
         for attr in attrs
             if info = elem.getAttribute("data-#{attr}")
                 @["_#{attr}Role"](elem,info)
@@ -51,12 +51,15 @@ class EnhancedWidget extends Widget
                 @renderDataModel.declare who
             oldClass = "";
             @renderDataModel.listenBy elem,"change/#{who}",(value)=>
-                if elem.classList.contains value
+                if value and elem.classList.contains value
+                    if oldClass and elem.classList.contains oldClass
+                        elem.classList.remove oldClass
                     oldClass = value
                     return
                 if oldClass
                     elem.classList.remove oldClass
-                elem.classList.add value
+                if value and not elem.classList.contains(value)
+                    elem.classList.add value
                 oldClass = value
     _attributeRole:(elem,whats="")->
         whats = whats.split(",").map((item)->item.trim().split(":")).filter (pair)->pair.length is 1 or pair.length is 2
@@ -79,4 +82,4 @@ class EnhancedWidget extends Widget
         super()
 
 # overwrite the old widget
-Leaf.Widget = EnhancedWidget
+Leaf.Widget = Widget
