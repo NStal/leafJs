@@ -98,4 +98,4 @@ class EventEmitter
                     handlers[index] = null
             @_events[event] = handlers.filter (item)->item
         return this
-Leaf.EventEmitter = EventEmitter
+exports.EventEmitter = EventEmitter

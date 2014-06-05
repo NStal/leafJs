@@ -1,5 +1,5 @@
 class Widget extends Widget
-    @attrs = ["text","html","class","value","attribute"]
+    @attrs = ["text","html","class","value","attribute","src"]
     constructor:(template)->
         super template
         @__defineGetter__ "renderData",()=>

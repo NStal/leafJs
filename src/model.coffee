@@ -27,16 +27,12 @@ class Model extends EventEmitter
                 @declare item
             return
         if @_defines[name]
-            console.warn "already defines model property #{name}"
+            console and console.warn and console.warn "already defines model property #{name}"
             return
         obj = {}
         @_defines[name] = obj
         accessor = {
             get:()=>
-                if not obj.value
-                    return obj.value
-                if obj.value instanceof Array
-                    return obj.value.slice(0)
                 return obj.value
             ,set:(value)=>
                 if obj.value is value
@@ -53,7 +49,7 @@ class Model extends EventEmitter
         if typeof this[name] is "undefined"
             Object.defineProperty this,name,accessor
         else
-            console.warn "Model property name '#{name}' conflict with an existing property of this model instance, and won't be overwritten. You can access it safely via Model.data.#{name} instead of model.#{name}"
+            console and console.warn and console.warn "Model property name '#{name}' conflict with an existing property of this model instance, and won't be overwritten. You can access it safely via Model.data.#{name} instead of model.#{name}"
     defaults:(kv)->
         for prop of kv
             if @has prop
@@ -150,10 +146,6 @@ class Model extends EventEmitter
                 result[prop] = result[prop].toJSON({complete:complete})
             
         return result
-    ref:(key)-> 
-        if not @_defines[key]
-            throw new Error "undefined model property #{key}"
-        return @_defines[key].value
     retain:()->
         @_ref++
     release:()->

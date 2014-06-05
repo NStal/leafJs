@@ -200,7 +200,7 @@
   module("Model and Collection");
 
   test("Basic model should work", function() {
-    var TestCollection, TestModel, change, changeAgain, changed, collection, data, desCounter, destroyed, e, error, id, json, length, m1, m2, m3, model, modelSameId, obj, prop, recieveEvent, result;
+    var TestCollection, TestModel, change, changeAgain, changed, collection, data, desCounter, destroyed, e, error, json, length, m1, m2, m3, model, modelSameId, obj, prop, recieveEvent, result;
     TestModel = (function(_super) {
       __extends(TestModel, _super);
 
@@ -505,16 +505,7 @@
     obj = {
       a: 5
     };
-    model.id = obj;
-    ok(model.id !== obj);
-    id = model.id;
-    ok(id !== model.id);
-    id.a = 6;
-    ok(model.id.a === 5);
-    id = model.ref("id");
-    ok(id === model.ref("id"));
-    id.a = 6;
-    return ok(model.id.a === 6);
+    return model.id = obj;
   });
 
   module("EnhancedWidget");
@@ -590,6 +581,34 @@
     ok(w.renderData.a1 === "a1");
     ok(w.renderData.someClass === "X");
     return ok(w.renderData.a2 === "456");
+  });
+
+  asyncTest("test RestApiFactory", function() {
+    var factory, testApi;
+    factory = new Leaf.RestApiFactory();
+    testApi = factory.create({
+      url: "apiResponse.json",
+      method: "GET"
+    });
+    expect(2);
+    return testApi({}, function(err, data) {
+      console.assert(!err);
+      console.assert(data instanceof Array);
+      ok(true);
+      testApi = factory.create({
+        url: ":name/测试",
+        method: "GET"
+      });
+      return testApi({
+        name: "apiResponse.json"
+      }, function(err, data) {
+        console.error(err, data);
+        console.assert(!err);
+        console.assert(data instanceof Array);
+        ok(true);
+        return start();
+      });
+    });
   });
 
 }).call(this);

@@ -448,15 +448,7 @@ test "Basic model should work",()->
     ok length is 2
     obj = {a:5}
     model.id = obj
-    ok model.id isnt obj
-    id = model.id
-    ok id isnt model.id
-    id.a = 6
-    ok model.id.a is 5
-    id = model.ref("id")
-    ok id is model.ref("id")
-    id.a = 6
-    ok model.id.a is 6
+
     
 module "EnhancedWidget"
 test "basic widget test",()->
@@ -550,3 +542,21 @@ test "enhanced widget test",()->
     ok w.renderData.a1 is "a1"
     ok w.renderData.someClass is "X"
     ok w.renderData.a2 is "456"
+
+asyncTest "test RestApiFactory",()->
+    factory = new Leaf.RestApiFactory()
+    testApi = factory.create({url:"apiResponse.json",method:"GET"})
+    expect 2
+    testApi {},(err,data)->
+        console.assert not err
+        console.assert data instanceof Array
+        ok true
+        
+        testApi = factory.create({url:":name/测试",method:"GET"})
+        testApi {name:"apiResponse.json"},(err,data)->
+            console.error err,data
+            console.assert not err
+            console.assert data instanceof Array
+            ok true
+            start()
+    

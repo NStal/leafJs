@@ -1,4 +1,7 @@
-if not exports
-    exports = window
 Leaf = {}
-exports.Leaf = Leaf
+if not exports
+    exports = Leaf
+    window.Leaf = Leaf
+else
+    module.exports = Leaf
+    exports = Leaf
