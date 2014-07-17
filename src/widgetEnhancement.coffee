@@ -7,6 +7,10 @@ class Widget extends Widget
                 return @renderDataModel.data
             else
                 return null
+        # read-only alias for renderData
+        @__defineGetter__ "Data",()=>
+            return @renderData
+        
         @__defineSetter__ "renderData",(value)=>
             if @renderDataModel
                 @renderDataModel.data = value
