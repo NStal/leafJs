@@ -72,6 +72,9 @@ class Widget extends Leaf.EventEmitter
                     continue
                 if this[name] instanceof Widget
                     this[name].replace widget
+                    # assign data-widget to newly replace widget element
+                    # for easy human reading DOM.
+                    this[name].node$.attr("data-widget",name)
                 else if this[name]
                     console.warn "Widget named #{name} isnt isn't instanceof Widget"
                     console.trace()
