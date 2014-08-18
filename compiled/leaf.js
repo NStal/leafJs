@@ -1064,7 +1064,8 @@
               continue;
             }
             if (this[name] instanceof Widget) {
-              _results1.push(this[name].replace(widget));
+              this[name].replace(widget);
+              _results1.push(this[name].node$.attr("data-widget", name));
             } else if (this[name]) {
               console.warn("Widget named " + name + " isnt isn't instanceof Widget");
               _results1.push(console.trace());

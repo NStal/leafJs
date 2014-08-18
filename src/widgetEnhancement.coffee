@@ -1,5 +1,8 @@
 class Widget extends Widget
     @attrs = ["text","html","class","value","attribute","src"]
+    @namespace = new Namespace()
+    @register = @namespace.register.bind(@namespace)
+    @unregister = @namespace.unregister.bind(@namespace)
     constructor:(template)->
         super template
         @__defineGetter__ "renderData",()=>

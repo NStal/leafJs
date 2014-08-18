@@ -23,6 +23,12 @@ Util.getBrowserInfo = ()->
     return {name:M[0],version:M[1],mobile:Util.isMobile()}
 Util.browser = Util.getBrowserInfo()
 Util.capitalize = (string)-> string.charAt(0).toUpperCase() + string.slice(1);
+Util.slugToCamel = (string)->
+    string.replace /-[a-z]/ig,(match)->
+        return match.substring(1).toUpperCase()
+Util.camelToSlug = (string)->
+    string.replace /[a-z][A-Z]/g,(match)->
+        return match[0]+"-"+match[1].toLowerCase()
 Util.clone = (x,stack = [])-> 
     if x is null or x is undefined
         return x;
