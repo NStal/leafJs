@@ -48,6 +48,8 @@ class Namespace extends Leaf.EventEmitter
             widget.node.setAttribute(attr.name,attr.value)
             widget.node[attr.name] = attr.value
         return widget
-        
+    setTemplates:(templates)->
+
+        # done
         
 Leaf.Namespace = Namespace

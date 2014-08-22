@@ -1,5 +1,5 @@
 class Widget extends Leaf.EventEmitter
-    constructor:(template )->
+    constructor:(template)->
         super()
         @namespace = @constructor and @constructor.namespace or null
         @template = template or @template or = "<div></div>"

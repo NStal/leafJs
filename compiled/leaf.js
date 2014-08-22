@@ -1072,6 +1072,8 @@
       return widget;
     };
 
+    Namespace.prototype.setTemplates = function(templates) {};
+
     return Namespace;
 
   })(Leaf.EventEmitter);
