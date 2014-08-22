@@ -240,6 +240,18 @@
     return string.charAt(0).toUpperCase() + string.slice(1);
   };
 
+  Util.slugToCamel = function(string) {
+    return string.replace(/-[a-z]/ig, function(match) {
+      return match.substring(1).toUpperCase();
+    });
+  };
+
+  Util.camelToSlug = function(string) {
+    return string.replace(/[a-z][A-Z]/g, function(match) {
+      return match[0] + "-" + match[1].toLowerCase();
+    });
+  };
+
   Util.clone = function(x, stack) {
     var item, obj, prop, r, _i, _len;
     if (stack == null) {
@@ -1612,6 +1624,12 @@
 
     Widget.attrs = ["text", "html", "class", "value", "attribute", "src"];
 
+    Widget.namespace = new Namespace();
+
+    Widget.register = Widget.namespace.register.bind(Widget.namespace);
+
+    Widget.unregister = Widget.namespace.unregister.bind(Widget.namespace);
+
     function Widget(template) {
       Widget.__super__.constructor.call(this, template);
       this.__defineGetter__("renderData", (function(_this) {
@@ -2016,6 +2034,7 @@
       this.stateField = "state";
       this.dataField = "data";
       this.errorField = "error";
+      this.defaultMethod = "GET";
     }
 
     RestApiFactory.prototype.prefix = function(prefix) {
@@ -2035,7 +2054,7 @@
       if (option == null) {
         option = {};
       }
-      method = option.method || "GET";
+      method = option.method || this.defaultMethod || "GET";
       _url = option.url;
       if (!_url) {
         throw new Error("API require en URL");
@@ -2101,6 +2120,7 @@
       }
       xhr = new XMLHttpRequest();
       xhr.open(method, url, true);
+      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
       done = false;
       _callback = callback;
       callback = (function(_this) {

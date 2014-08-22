@@ -8,6 +8,7 @@ class RestApiFactory
         @stateField = "state"
         @dataField = "data"
         @errorField = "error"
+        @defaultMethod = "GET"
     prefix:(prefix)->
         @_prefix = prefix or ""
     suffix:(suffix)->
@@ -15,7 +16,7 @@ class RestApiFactory
     reset:()->
         @_prefix
     create:(option = {})->
-        method = option.method or "GET"
+        method = option.method or @defaultMethod or "GET"
         _url = option.url
         if not _url
             throw new Error "API require en URL"
@@ -54,6 +55,7 @@ class RestApiFactory
             url = option.url
         xhr = new XMLHttpRequest()
         xhr.open(method,url,true)
+        xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded")
         #xhr.responseType = option.dataType or "json"
         done = false
         _callback = callback
