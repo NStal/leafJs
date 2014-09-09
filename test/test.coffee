@@ -554,9 +554,19 @@ asyncTest "test RestApiFactory",()->
         
         testApi = factory.create({url:":name/测试",method:"GET"})
         testApi {name:"apiResponse.json"},(err,data)->
-            console.error err,data
-            console.assert not err
-            console.assert data instanceof Array
-            ok true
+            ok err
             start()
+test "test Errors",()->
+    Errors = Leaf.ErrorFactory.create()
+        .define("TestError")
+        .generate()
+    
+    ok Errors.TestError,"has test error"
+    error = new Errors.TestError("Just a test!",{name:"hehe~"})
+    console.debug error
+    ok error instanceof Error,"instanceof Error"
+    console.log error
+    console.log JSON.parse JSON.stringify error
+    ok error.message
+    ok error.name is "hehe~"
     

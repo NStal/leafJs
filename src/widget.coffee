@@ -206,7 +206,7 @@ class Widget extends Leaf.EventEmitter
         return true
     remove:()->
         if @node.parentElement
-            node.parentElement.removeChild @node
+            @node.parentElement.removeChild @node
     after:(target)->
         if target is this or target is @node
             return

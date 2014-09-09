@@ -602,13 +602,25 @@
       return testApi({
         name: "apiResponse.json"
       }, function(err, data) {
-        console.error(err, data);
-        console.assert(!err);
-        console.assert(data instanceof Array);
-        ok(true);
+        ok(err);
         return start();
       });
     });
+  });
+
+  test("test Errors", function() {
+    var Errors, error;
+    Errors = Leaf.ErrorFactory.create().define("TestError").generate();
+    ok(Errors.TestError, "has test error");
+    error = new Errors.TestError("Just a test!", {
+      name: "hehe~"
+    });
+    console.debug(error);
+    ok(error instanceof Error, "instanceof Error");
+    console.log(error);
+    console.log(JSON.parse(JSON.stringify(error)));
+    ok(error.message);
+    return ok(error.name === "hehe~");
   });
 
 }).call(this);

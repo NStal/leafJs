@@ -93,13 +93,14 @@
 
   Leaf.ns.register(CurrentTimeLabel);
 
-  TEST.register(function() {
+  window.TEST.register(function() {
     var root;
     root = new PageRoot();
     root.appendTo(document.body);
-    return root.UI.header$.css({
+    root.UI.header$.css({
       backgroundColor: "blue"
     });
+    return root.UI.timer.color = "pink";
   });
 
 }).call(this);
