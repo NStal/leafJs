@@ -15,3 +15,4 @@ $(FRONTJS) : %.js : %.coffee
 	$(COFFEE) -o compiled/part/ src/front-end/$<
 
 $(FRONTCOFFEE):
+

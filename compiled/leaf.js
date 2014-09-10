@@ -440,7 +440,7 @@
   States = (function(_super) {
     __extends(States, _super);
 
-    States.Errors = Errors;
+    States.Errors = Leaf.ErrorFactory.create().define("InvalidState").define("AlreadyDestroyed").generate();
 
     function States() {
       this.state = "void";
@@ -1341,9 +1341,32 @@
         oldNode.parentElement.insertBefore(this.node, oldNode);
         oldNode.parentElement.removeChild(oldNode);
       }
+      this.initSubTemplate();
       this.initUI();
       this.initSubWidgets();
       return this.initDelegates();
+    };
+
+    Widget.prototype.initSubTemplate = function() {
+      var name, template, templateNodes, tmpl, _i, _len, _results;
+      this.templates = this.templates || {};
+      templateNodes = this.node.querySelectorAll("template");
+      templateNodes = [].slice.call(templateNodes, 0);
+      _results = [];
+      for (_i = 0, _len = templateNodes.length; _i < _len; _i++) {
+        tmpl = templateNodes[_i];
+        template = tmpl.innerHTML;
+        name = tmpl.getAttribute("data-name");
+        if (tmpl.parentElement) {
+          tmpl.parentElement.removeChild(tmpl);
+        }
+        if (name) {
+          _results.push(this.templates[name] = template);
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
     };
 
     Widget.prototype.expose = function(name, remoteName) {

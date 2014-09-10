@@ -623,4 +623,11 @@
     return ok(error.name === "hehe~");
   });
 
+  test("Test sub templates of widget", function() {
+    var templates, w;
+    templates = "<div><template data-name='listItem'><span class='listItem'></span></template></div>";
+    w = new Leaf.Widget(templates);
+    return ok(w.templates.listItem, "template listItem is:" + w.templates.listItem);
+  });
+
 }).call(this);

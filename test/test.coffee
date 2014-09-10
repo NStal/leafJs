@@ -569,4 +569,9 @@ test "test Errors",()->
     console.log JSON.parse JSON.stringify error
     ok error.message
     ok error.name is "hehe~"
+
+test "Test sub templates of widget",()->
+    templates = "<div><template data-name='listItem'><span class='listItem'></span></template></div>"
+    w = new Leaf.Widget(templates)
+    ok w.templates.listItem,"template listItem is:"+w.templates.listItem
     

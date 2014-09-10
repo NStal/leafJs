@@ -48,9 +48,23 @@ class Widget extends Leaf.EventEmitter
             oldNode.parentElement.insertBefore @node,oldNode
             oldNode.parentElement.removeChild oldNode
         # init UI will listen all predined events on target
+        @initSubTemplate()
         @initUI()
         @initSubWidgets()
         @initDelegates()
+    initSubTemplate:()->
+        @templates = @templates or {}
+        templateNodes = @node.querySelectorAll "template"
+        # Dom action will cause nodes array change,
+        # let me convert it to array first
+        templateNodes = [].slice.call(templateNodes,0)
+        for tmpl in templateNodes
+            template = tmpl.innerHTML
+            name = tmpl.getAttribute("data-name")
+            if tmpl.parentElement
+                tmpl.parentElement.removeChild(tmpl)
+            if name
+                @templates[name] = template
     expose:(name,remoteName)->
         remoteName = remoteName or name
         if @[name] and typeof @[name] is "function"
