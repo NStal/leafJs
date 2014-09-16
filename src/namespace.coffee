@@ -8,7 +8,7 @@ class Namespace extends Leaf.EventEmitter
         else if constructor not instanceof Leaf.Widget or not name
             throw new Error "invalid namespace register with #{name}"
         if constructor.namespace
-            
+            console.warn "widget #{constructor.name} already registered in namespace",constructor.namespace
         constructor.scopeName = name
         @scope[constructor.scopeName] = constructor
         @widgets.push constructor

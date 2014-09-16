@@ -36,16 +36,18 @@ Util.clone = (x,stack = [])->
         return x.clone();
     if x in stack
         throw new Error "clone recursive object"
-    stack.push x
     if x instanceof Array
         r = [];
+        stack.push x
         for item in x
             r.push Util.clone(item,stack)
         return r; 
     if typeof x is "object"
         obj = {}
+        stack.push x
         for prop of x
-            obj[prop] = Util.clone(x[prop],stack)
+            if x.hasOwnProperty prop
+                obj[prop] = Util.clone(x[prop],stack)
         return obj
     return x;
 Util.compare = (x,y)->

@@ -1,6 +1,6 @@
 .SUFFIXES: .coffee .js
 COFFEE = coffee -c
-FRONTCOFFEE = base.coffee eventEmitter.coffee util.coffee keyEventManager.coffee model.coffee collection.coffee widget.coffee widgetEnhancement.coffee templateManager.coffee restApiFactory.coffee #apiManager.coffee apiFactory.coffee router.coffee
+FRONTCOFFEE = base.coffee eventEmitter.coffee util.coffee keyEventManager.coffee namespace.coffee model.coffee collection.coffee widget.coffee widgetEnhancement.coffee templateManager.coffee restApiFactory.coffee #apiManager.coffee apiFactory.coffee router.coffee
 FRONTJS = $(FRONTCOFFEE:.coffee=.js)
 all : compiled/leaf.js compiled/leaf.min.js
 

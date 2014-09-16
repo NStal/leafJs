@@ -27,7 +27,7 @@ class RestApiFactory
             url = _url
             for prop of data
                 if prop in routeParams
-                    url = url.replace(new RegExp(":"+prop,"g"),encodeURI(data[prop]))
+                    url = url.replace(new RegExp(":"+prop,"g"),encodeURIComponent(data[prop]))
                     delete data[prop]
             reqOption = {
                 url:url
@@ -84,7 +84,7 @@ class RestApiFactory
     _encodeDataPayload:(data = {})->
         result = []
         for prop of data
-            kv = [prop,data[prop]].join("=")
+            kv = [prop,encodeURIComponent(data[prop])].join("=")
             result.push kv
         return result.join("&")
                     
