@@ -602,13 +602,32 @@
       return testApi({
         name: "apiResponse.json"
       }, function(err, data) {
-        console.error(err, data);
-        console.assert(!err);
-        console.assert(data instanceof Array);
-        ok(true);
+        ok(err);
         return start();
       });
     });
+  });
+
+  test("test Errors", function() {
+    var Errors, error;
+    Errors = Leaf.ErrorFactory.create().define("TestError").generate();
+    ok(Errors.TestError, "has test error");
+    error = new Errors.TestError("Just a test!", {
+      name: "hehe~"
+    });
+    console.debug(error);
+    ok(error instanceof Error, "instanceof Error");
+    console.log(error);
+    console.log(JSON.parse(JSON.stringify(error)));
+    ok(error.message);
+    return ok(error.name === "hehe~");
+  });
+
+  test("Test sub templates of widget", function() {
+    var templates, w;
+    templates = "<div><template data-name='listItem'><span class='listItem'></span></template></div>";
+    w = new Leaf.Widget(templates);
+    return ok(w.templates.listItem, "template listItem is:" + w.templates.listItem);
   });
 
 }).call(this);

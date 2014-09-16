@@ -1,11 +1,11 @@
 Util = {}
 # judge is template is an HTMLDOMElement
 # from:http://stackoverflow.com/questions/384286/javascript-isdom-how-do-you-check-if-a-javascript-object-is-a-dom-object
-Util.isHTMLElement = (template) ->
+Util.isHTMLElement = (template)->
     if typeof HTMLElement is "object" and template instanceof HTMLElement or (template and typeof template is "object" and template.nodeType is 1 and typeof template.nodeName is"string" )
         return true
     return false
-Util.isHTMLNode = (o) ->
+Util.isHTMLNode = (o)->
     return (typeof Node is "object" and o instanceof Node ) or o and typeof o is "object" and typeof o.nodeType is "number" and typeof o.nodeName is "string"
 Util.isMobile = ()->
     if navigator and navigator.userAgent
@@ -22,13 +22,16 @@ Util.getBrowserInfo = ()->
     M= `M ? [M[1],M[2]] : [N, navigator.appVersion, '-?']`
     return {name:M[0],version:M[1],mobile:Util.isMobile()}
 Util.browser = Util.getBrowserInfo()
-Util.capitalize = (string)-> string.charAt(0).toUpperCase() + string.slice(1);
+Util.capitalize = (string)-> string.charAt(0).toUpperCase() + string.slice(1)
 Util.slugToCamel = (string)->
     string.replace /-[a-z]/ig,(match)->
         return match.substring(1).toUpperCase()
-Util.camelToSlug = (string)->
-    string.replace /[a-z][A-Z]/g,(match)->
-        return match[0]+"-"+match[1].toLowerCase()
+Util.camelToSlug = (string,keepCase = false)->
+    result = string.replace /[a-z][A-Z]/g,(match)->
+        match[0]+"-"+match[1].toLowerCase() 
+    if not keepCase
+        result = result.toLowerCase()
+    return result
 Util.clone = (x,stack = [])-> 
     if x is null or x is undefined
         return x;
