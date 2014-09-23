@@ -26,15 +26,13 @@ class Widget extends Leaf.EventEmitter
                 if not @node
                     console.error "template of query #{query} not found"
                     return
-                @node.widget = this
             else
                 tempNode = document.createElement("div");
                 tempNode.innerHTML = template.trim()
                 @node = tempNode.children[0]
         else if Util.isHTMLNode(template)
             @node = template
-            @node.widget = this
-        
+        @node.widget = this
         # insert tr or td tag into div or something
         # may cause failure to generate elements
         # but we only handle it in latter version
@@ -83,8 +81,8 @@ class Widget extends Leaf.EventEmitter
                     @[setterName](value,"property") 
                 else
                     @[name] = value
-    initDelegates:()->
-        events = ["blur","click","focus","keydown","keyup","keypress","mousemove","mouseenter","mouseleave","mouseover","mouseout","scroll"]
+#    initDelegates:()->
+#        events = ["blur","click","focus","keydown","keyup","keypress","mousemove","mouseenter","mouseleave","mouseover","mouseout","scroll"]
 
     initSubWidgets:()->
         if @namespace
@@ -112,7 +110,6 @@ class Widget extends Leaf.EventEmitter
             if name? and not @[name]?
                 @[name] = widget
             if elem.dataset.id
-                console.debug "elem.dataset has id",elem.dataset.id
                 @_bindUI(widget.node,elem.dataset.id)
     
     initUI:()->
@@ -141,22 +138,40 @@ class Widget extends Leaf.EventEmitter
         if type is "group"
             fnName += "Groups"
         if @[fnName]
-            @[fnName](event)
-        return
+            return @[fnName](event)
+        return true
     initDelegates:()->
         if @disableDelegates
             return
         events = ["click","mouseup","mousedown","mousemove","mouseleave","mouseenter","keydown","keyup","keypress"]
         for event in events
             do (event)=>
-                @node["on#{event}"] = (e)=>
+                @node.addEventListener event,(e)=>
+                    # don't use e.stopImmediatePropagation()
+                    # use prevent default
+                    e.capture = ()->
+                        e.stopImmediatePropagation()
+                        e.preventDefault()
                     source = e.target or e.srcElement
-                    if source.widget isnt this
-                        return
-                    if source.uiId
-                        @_delegateTo "id",source.uiId,e
-                    else if source.dataset.group
-                        @_delegateTo "group",source.dataset.group,e
+                    while source and not e.defaultPrevented
+                        e.currentTarget = source
+                        if source is @node
+                            result = @_delegateTo "self","node",e
+                        if source.widget and source.widget isnt this
+                            # likely we by any chance
+                            # run into others dom space
+                            break
+                        else if source.uiId
+                            result = @_delegateTo "id",source.uiId,e
+                        else if source.dataset.group
+                            result = @_delegateTo "group",source.dataset.group,e
+                        if result is false
+                            e.capture()
+                            break
+                        else
+                            if source is @node
+                                break
+                            source = source.parentElement
                 
     _delegateUnBubbleEvent:(name)->
         if @disableDelegates
@@ -187,7 +202,7 @@ class Widget extends Leaf.EventEmitter
                 # the behavior should be unpredictable and unwanted
                 do (event)=>
                     node["on#{event}"] = (e)=>
-                        @_delegateTo "id",name,event
+                        @_delegateTo "id",name,e
     appendTo:(target)->
         if Util.isHTMLElement(target)
             target.appendChild(@node)

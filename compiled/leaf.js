@@ -1322,7 +1322,6 @@
             console.error("template of query " + query + " not found");
             return;
           }
-          this.node.widget = this;
         } else {
           tempNode = document.createElement("div");
           tempNode.innerHTML = template.trim();
@@ -1330,8 +1329,8 @@
         }
       } else if (Util.isHTMLNode(template)) {
         this.node = template;
-        this.node.widget = this;
       }
+      this.node.widget = this;
       if (!this.node) {
         this.isValid = false;
         return;
@@ -1405,11 +1404,6 @@
       }
     };
 
-    Widget.prototype.initDelegates = function() {
-      var events;
-      return events = ["blur", "click", "focus", "keydown", "keyup", "keypress", "mousemove", "mouseenter", "mouseleave", "mouseover", "mouseout", "scroll"];
-    };
-
     Widget.prototype.initSubWidgets = function() {
       var attr, elem, elems, name, selector, widget, _i, _j, _len, _len1, _ref, _results;
       if (this.namespace) {
@@ -1440,7 +1434,6 @@
           this[name] = widget;
         }
         if (elem.dataset.id) {
-          console.debug("elem.dataset has id", elem.dataset.id);
           _results.push(this._bindUI(widget.node, elem.dataset.id));
         } else {
           _results.push(void 0);
@@ -1485,8 +1478,9 @@
         fnName += "Groups";
       }
       if (this[fnName]) {
-        this[fnName](event);
+        return this[fnName](event);
       }
+      return true;
     };
 
     Widget.prototype.initDelegates = function() {
@@ -1500,18 +1494,38 @@
         event = events[_i];
         _results.push((function(_this) {
           return function(event) {
-            return _this.node["on" + event] = function(e) {
-              var source;
+            return _this.node.addEventListener(event, function(e) {
+              var result, source, _results1;
+              e.capture = function() {
+                e.stopImmediatePropagation();
+                return e.preventDefault();
+              };
               source = e.target || e.srcElement;
-              if (source.widget !== _this) {
-                return;
+              _results1 = [];
+              while (source && !e.defaultPrevented) {
+                e.currentTarget = source;
+                if (source === _this.node) {
+                  result = _this._delegateTo("self", "node", e);
+                }
+                if (source.widget && source.widget !== _this) {
+                  break;
+                } else if (source.uiId) {
+                  result = _this._delegateTo("id", source.uiId, e);
+                } else if (source.dataset.group) {
+                  result = _this._delegateTo("group", source.dataset.group, e);
+                }
+                if (result === false) {
+                  e.capture();
+                  break;
+                } else {
+                  if (source === _this.node) {
+                    break;
+                  }
+                  _results1.push(source = source.parentElement);
+                }
               }
-              if (source.uiId) {
-                return _this._delegateTo("id", source.uiId, e);
-              } else if (source.dataset.group) {
-                return _this._delegateTo("group", source.dataset.group, e);
-              }
-            };
+              return _results1;
+            });
           };
         })(this)(event));
       }
@@ -1558,7 +1572,7 @@
             _results1.push((function(_this) {
               return function(event) {
                 return node["on" + event] = function(e) {
-                  return _this._delegateTo("id", name, event);
+                  return _this._delegateTo("id", name, e);
                 };
               };
             })(this)(event));
