@@ -1223,27 +1223,12 @@
       } else if (!(constructor instanceof Leaf.Widget) || !name) {
         throw new Error("invalid namespace register with " + name);
       }
-      if (constructor.namespace) {
-        constructor.namespace.unregister(constructor);
+      if (__indexOf.call(this.widgets, constructor) >= 0) {
+        return;
       }
       constructor.scopeName = name;
       this.scope[constructor.scopeName] = constructor;
       this.widgets.push(constructor);
-      this.selectorCache = null;
-      return constructor.namespace = this;
-    };
-
-    Namespace.prototype.unregister = function(constructor) {
-      if (constructor.namespace === this) {
-        constructor.namespace = null;
-      }
-      this.widgets = this.widgets.filter(function(item) {
-        return item !== constructor;
-      });
-      if (constructor.scopeName && this.scope[constructor.scopeName] === constructor) {
-        delete this.scope[constructor.scopeName];
-      }
-      delete constructor.scopeName;
       return this.selectorCache = null;
     };
 
@@ -1252,7 +1237,7 @@
       extra = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       if (this.selectorCache == null) {
         this.selectorCache = this.widgets.filter(function(item) {
-          return item["public"];
+          return item["public"] || true;
         }).map(function(item) {
           return Util.camelToSlug(item.scopeName);
         }).join(",").trim();
@@ -1288,7 +1273,9 @@
       return widget;
     };
 
-    Namespace.prototype.setTemplates = function(templates) {};
+    Namespace.prototype.setTemplates = function(templates) {
+      return this.templates = templates;
+    };
 
     return Namespace;
 
@@ -1301,10 +1288,7 @@
 
     function Widget(template) {
       Widget.__super__.constructor.call(this);
-      if (this.constructor && !this.constructor.namespace) {
-        Leaf.ns.register(this.constructor);
-      }
-      this.namespace = this.constructor && this.constructor.namespace || null;
+      this.namespace = this.namespace || (this.constructor && this.constructor.namespace) || new Leaf.Namespace();
       this.template = template || (this.template || (this.template = "<div></div>"));
       this.node = null;
       this.$node = null;
@@ -1313,6 +1297,11 @@
       this.initTemplate(this.template);
       this._models = [];
     }
+
+    Widget.prototype.include = function(widget) {
+      this.namespace = this.namespace || (this.constructor && this.constructor.namespace) || Widget.ns || new Leaf.Namespace();
+      return this.namespace.include(widget);
+    };
 
     Widget.prototype.initTemplate = function(template) {
       var oldNode, query, tempNode;
@@ -1712,13 +1701,6 @@
     return Widget;
 
   })(Leaf.EventEmitter);
-
-  Leaf.setGlobalNamespace = function(ns) {
-    Widget.namespace = ns;
-    return Leaf.ns = ns;
-  };
-
-  Leaf.setGlobalNamespace(new Namespace());
 
   WidgetBase = Widget;
 

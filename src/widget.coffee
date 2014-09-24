@@ -1,9 +1,7 @@
 class Widget extends Leaf.EventEmitter
     constructor:(template)->
         super()
-        if @constructor and not @constructor.namespace
-            Leaf.ns.register @constructor
-        @namespace = @constructor and @constructor.namespace or null
+        @namespace = @namespace or (@constructor and @constructor.namespace) or new Leaf.Namespace()
         @template = template or @template or = "<div></div>"
         @node = null 
         @$node = null
@@ -11,6 +9,10 @@ class Widget extends Leaf.EventEmitter
         @UI = {}
         @initTemplate(@template)
         @_models = []
+    include:(widget)->
+        @namespace = @namespace or (@constructor and @constructor.namespace) or Widget.ns or new Leaf.Namespace()
+        @namespace.include widget
+
     # make template into HTMLElement
     # if template is html strings
     # it will parsed into HTMLElement
@@ -281,7 +283,7 @@ class Widget extends Leaf.EventEmitter
         @node = null
         @node$ = null
         @$node = null
-Leaf.setGlobalNamespace = (ns)->
-    Widget.namespace = ns
-    Leaf.ns = ns
-Leaf.setGlobalNamespace(new Namespace())
+#Leaf.setGlobalNamespace = (ns)->
+#    Widget.namespace = ns
+#    Widget.ns = ns
+#Leaf.setGlobalNamespace(new Namespace())
