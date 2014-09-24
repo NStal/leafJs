@@ -576,10 +576,7 @@ test "Test sub templates of widget",()->
     ok w.templates.listItem,"template listItem is:"+w.templates.listItem
 
 test "Test namespace of widget",()->
-    Leaf.setGlobalNamespace new Leaf.Namespace()
     class PublicButton extends Leaf.Widget
-        @public = true
-        Leaf.ns.include this
         constructor:()->
             super "<button>public</button>"
             @node$.addClass("button")
@@ -588,7 +585,9 @@ test "Test namespace of widget",()->
             super "<button>private</button>"
             @node$.addClass "private-button"
     class View extends Leaf.Widget
+        
         constructor:()->
+            @include PublicButton
             super """
 <div>
     <public-button data-id='pub'></public-button>
@@ -596,8 +595,6 @@ test "Test namespace of widget",()->
 </div>
                 """
     view = new View()
-    console.debug view.node,"?"
-    console.log Leaf.ns.widgets
     ok view.UI.pub$.text() is "public","public widget should be replaced"
     ok view.UI.prb$.text() isnt "private","private widget shouldn't be replaced"
     ok view.UI.pub.getAttribute("data-id") is "pub","replaced widget's attribute shuold be preserved"
