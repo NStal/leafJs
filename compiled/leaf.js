@@ -1213,6 +1213,10 @@
       this.widgets = [];
     }
 
+    Namespace.prototype.include = function() {
+      return this.register.apply(this, arguments);
+    };
+
     Namespace.prototype.register = function(constructor, name) {
       if (!name) {
         name = constructor.name;
@@ -1297,6 +1301,9 @@
 
     function Widget(template) {
       Widget.__super__.constructor.call(this);
+      if (this.constructor && !this.constructor.namespace) {
+        Leaf.ns.register(this.constructor);
+      }
       this.namespace = this.constructor && this.constructor.namespace || null;
       this.template = template || (this.template || (this.template = "<div></div>"));
       this.node = null;
@@ -1644,7 +1651,6 @@
         return false;
       }
       if (!target || !target.parentElement) {
-        console.log(target, target.parentElement);
         console.error("can't insert befere root element ");
         return false;
       }

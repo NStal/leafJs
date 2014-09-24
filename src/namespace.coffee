@@ -3,6 +3,8 @@ class Namespace extends Leaf.EventEmitter
         super()
         @scope = {}
         @widgets = []
+    include:()->
+        @register.apply this,arguments
     register:(constructor,name)->
         if not name
             name = constructor.name
