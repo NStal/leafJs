@@ -630,4 +630,51 @@
     return ok(w.templates.listItem, "template listItem is:" + w.templates.listItem);
   });
 
+  test("Test namespace of widget", function() {
+    var PrivateButton, PublicButton, View, view;
+    Leaf.setGlobalNamespace(new Leaf.Namespace());
+    PublicButton = (function(_super) {
+      __extends(PublicButton, _super);
+
+      PublicButton["public"] = true;
+
+      Leaf.ns.include(PublicButton);
+
+      function PublicButton() {
+        PublicButton.__super__.constructor.call(this, "<button>public</button>");
+        this.node$.addClass("button");
+      }
+
+      return PublicButton;
+
+    })(Leaf.Widget);
+    PrivateButton = (function(_super) {
+      __extends(PrivateButton, _super);
+
+      function PrivateButton() {
+        PrivateButton.__super__.constructor.call(this, "<button>private</button>");
+        this.node$.addClass("private-button");
+      }
+
+      return PrivateButton;
+
+    })(Leaf.Widget);
+    View = (function(_super) {
+      __extends(View, _super);
+
+      function View() {
+        View.__super__.constructor.call(this, "<div>\n    <public-button data-id='pub'></public-button>\n    <private-button data-id='prb'></private-button>\n</div>");
+      }
+
+      return View;
+
+    })(Leaf.Widget);
+    view = new View();
+    console.debug(view.node, "?");
+    console.log(Leaf.ns.widgets);
+    ok(view.UI.pub$.text() === "public", "public widget should be replaced");
+    ok(view.UI.prb$.text() !== "private", "private widget shouldn't be replaced");
+    return ok(view.UI.pub.getAttribute("data-id") === "pub", "replaced widget's attribute shuold be preserved");
+  });
+
 }).call(this);

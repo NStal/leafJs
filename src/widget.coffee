@@ -1,6 +1,8 @@
 class Widget extends Leaf.EventEmitter
     constructor:(template)->
         super()
+        if @constructor and not @constructor.namespace
+            Leaf.ns.register @constructor
         @namespace = @constructor and @constructor.namespace or null
         @template = template or @template or = "<div></div>"
         @node = null 
@@ -232,7 +234,6 @@ class Widget extends Leaf.EventEmitter
             console.error "Insert unknow Object",target
             return false
         if not target or not target.parentElement
-            console.log target,target.parentElement
             console.error "can't insert befere root element "
             return false
         if target.nextElementSibling
