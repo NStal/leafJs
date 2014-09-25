@@ -32,7 +32,7 @@
       this.trigger = this.emit;
     }
 
-    EventEmitter.prototype.on = function(event, callback, context) {
+    EventEmitter.prototype.addListener = function(event, callback, context) {
       var handler, handlers;
       handlers = this._events[event] = this._events[event] || [];
       handler = {
@@ -43,9 +43,16 @@
       return this;
     };
 
+    EventEmitter.prototype.on = function() {
+      return this.addListener.apply(this, arguments);
+    };
+
     EventEmitter.prototype.removeListener = function(event, listener) {
       var handler, handlers, index, _i, _len;
       handlers = this._events[event];
+      if (!listener) {
+        return;
+      }
       if (!handlers) {
         return this;
       }
@@ -71,14 +78,15 @@
     };
 
     EventEmitter.prototype.emit = function() {
-      var event, handler, handlers, index, once, params, _i, _len;
+      var event, handler, handlers, index, once, params, todos, _i, _j, _len, _len1;
       event = arguments[0], params = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
       handlers = this._events[event];
+      todos = [];
       if (handlers) {
         once = false;
         for (index = _i = 0, _len = handlers.length; _i < _len; index = ++_i) {
           handler = handlers[index];
-          handler.callback.apply(handler.context || this, params);
+          todos.push(handler);
           if (handler.once) {
             once = true;
           }
@@ -88,6 +96,10 @@
             return item.once !== true;
           });
         }
+      }
+      for (_j = 0, _len1 = todos.length; _j < _len1; _j++) {
+        handler = todos[_j];
+        handler.callback.apply(handler.context || this, params);
       }
       return this;
     };
@@ -139,22 +151,15 @@
       return this;
     };
 
-    EventEmitter.prototype.stopAllBubble = function() {
+    EventEmitter.prototype.stopAllBubbles = function() {
       var item, _i, _len, _ref;
       _ref = this._bubbles;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         item = _ref[_i];
         item.emitter.removeListener(item.event, item.listener);
       }
-      this._bubbles = null;
+      this._bubbles.length = 0;
       return this;
-    };
-
-    EventEmitter.prototype.destroy = function() {
-      this._events = null;
-      this.stopAllBubble();
-      this.isDestroy = true;
-      return null;
     };
 
     EventEmitter.prototype.listenBy = function(who, event, callback, context) {
@@ -360,29 +365,15 @@
       return item;
     });
     meta = {};
-    if (args.length === 0) {
-      BaseError = Error;
-      meta = {};
-    } else if (args.length === 1) {
-      if (args[0] instanceof Error) {
-        BaseError = args[0];
-        meta = {};
-      } else {
-        BaseError = Error;
-        meta = args[0];
-      }
-    } else if (args.length === 2) {
-      if (args[0] instanceof Error) {
-        BaseError = args[0];
+    BaseError = Error;
+    if (args[0] && args[0].prototype && Error.prototype.isPrototypeOf(args[0].prototype)) {
+      BaseError = args[0];
+      if (typeof args[1] === "object") {
         meta = args[1];
-      } else {
-        BaseError = args[1];
-        meta = args[0];
       }
-    } else {
-      BaseError = Error;
+    } else if (args[0] && typeof args[0] === "object") {
+      meta = args[0];
     }
-    console.debug(BaseError, Error);
     CustomError = (function(_super) {
       __extends(CustomError, _super);
 
@@ -413,6 +404,7 @@
       return CustomError;
 
     })(BaseError);
+    console.debug("extends", name, "with", BaseError.name);
     return CustomError;
   };
 
@@ -422,6 +414,14 @@
     }
 
     ErrorFactory.prototype.define = function(name, base, meta) {
+      if (typeof base === "string") {
+        if (!this.errors[base]) {
+          throw new Error("base error " + base + " not found");
+        } else {
+          console.debug("use base", base);
+          base = this.errors[base];
+        }
+      }
       this.errors[name] = Util.createError(name, base, meta);
       return this;
     };
@@ -1436,7 +1436,6 @@
           this[name] = widget;
         }
         if (elem.dataset.id) {
-          console.debug("elem.dataset has id", elem.dataset.id);
           _results.push(this._bindUI(widget.node, elem.dataset.id));
         } else {
           _results.push(void 0);
@@ -2314,7 +2313,7 @@
     TemplateManager.prototype._fromDomAll = function() {
       var e;
       try {
-        return JSON.parse(document.getElementById("leaf-templates").innerHTML);
+        return JSON.parse(document.querySelector("[data-json-templates]").innerHTML);
       } catch (_error) {
         e = _error;
         return {};
@@ -2326,7 +2325,7 @@
       templates = {};
       for (_i = 0, _len = tids.length; _i < _len; _i++) {
         tid = tids[_i];
-        templateNode = document.getElementById("leaf-templates-" + tid);
+        templateNode = document.querySelector("[data-template-name='" + tid + "']");
         templates[tid] = templateNode ? templateNode.innerHTML : void 0;
       }
       return templates;

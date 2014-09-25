@@ -116,7 +116,7 @@ class Widget extends Leaf.EventEmitter
             if name? and not @[name]?
                 @[name] = widget
             if elem.dataset.id
-                console.debug "elem.dataset has id",elem.dataset.id
+#                console.debug "elem.dataset has id",elem.dataset.id
                 @_bindUI(widget.node,elem.dataset.id)
     
     initUI:()->

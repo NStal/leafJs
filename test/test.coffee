@@ -598,4 +598,26 @@ test "Test namespace of widget",()->
     ok view.UI.pub$.text() is "public","public widget should be replaced"
     ok view.UI.prb$.text() isnt "private","private widget shouldn't be replaced"
     ok view.UI.pub.getAttribute("data-id") is "pub","replaced widget's attribute shuold be preserved"
-        
+
+asyncTest "template manager",()->
+    tm = new Leaf.TemplateManager()
+    template = "abced"
+    elem = document.createElement("template")
+    elem.setAttribute("data-template-name","test-template")
+    elem.innerHTML = template
+    document.body.appendChild elem
+    
+    tm.use "test-template"
+    tm.start()
+    tm.once "ready",(templates)->
+        ok templates["test-template"] is template
+        console.log templates
+        start()
+
+asyncTest "template manager without data-template-name should load from local",()->
+    tm = new Leaf.TemplateManager()
+    tm.use "not-exists"
+    tm.start()
+    tm.once "error",()->
+        ok()
+        start()

@@ -671,4 +671,32 @@
     return ok(view.UI.pub.getAttribute("data-id") === "pub", "replaced widget's attribute shuold be preserved");
   });
 
+  asyncTest("template manager", function() {
+    var elem, template, tm;
+    tm = new Leaf.TemplateManager();
+    template = "abced";
+    elem = document.createElement("template");
+    elem.setAttribute("data-template-name", "test-template");
+    elem.innerHTML = template;
+    document.body.appendChild(elem);
+    tm.use("test-template");
+    tm.start();
+    return tm.once("ready", function(templates) {
+      ok(templates["test-template"] === template);
+      console.log(templates);
+      return start();
+    });
+  });
+
+  asyncTest("template manager without data-template-name should load from local", function() {
+    var tm;
+    tm = new Leaf.TemplateManager();
+    tm.use("not-exists");
+    tm.start();
+    return tm.once("error", function() {
+      ok();
+      return start();
+    });
+  });
+
 }).call(this);

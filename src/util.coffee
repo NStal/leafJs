@@ -53,6 +53,8 @@ Util.clone = (x,stack = [])->
                 obj[prop] = Util.clone(x[prop],stack)
         return obj
     return x;
+# Util.compare is weak against recursive object
+# and will result in a Maximum stack error
 Util.compare = (x,y)->
     if x is y
         return true
@@ -81,7 +83,6 @@ Util.compare = (x,y)->
     for p in x
         if typeof(y[p]) is 'undefined' then return false
     return true
-
 
 Leaf.Util = Util
 Leaf.EventEmitter = EventEmitter

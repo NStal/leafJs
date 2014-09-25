@@ -2,6 +2,9 @@
 class EventEmitter
     @mixin = (obj)->
         em = new EventEmitter()
+        # Don't check overwrite.
+        # You ask me to mixin and I'll do so.
+        # Go blame your self.
         for prop of em
             obj[prop] = em[prop]
         return obj
@@ -10,15 +13,19 @@ class EventEmitter
         @_bubbles = []
         #alias
         @trigger = @emit
-    on:(event,callback,context)->
+    addListener:(event,callback,context)->
         handlers = @_events[event] = @_events[event] || []
         handler = 
             callback:callback
             context:context
         handlers.push handler
         return this
+    on:()->
+        @addListener.apply(this,arguments)
     removeListener:(event,listener)->
         handlers =  @_events[event]
+        if not listener
+            return
         if not handlers then return this
         for handler,index in handlers
             if handler.callback is listener
@@ -33,16 +40,19 @@ class EventEmitter
         return this
     emit: (event,params...)->
         handlers = @_events[event]
+        todos = []
         if handlers
             once = false
             for handler,index in handlers
-                handler.callback.apply(
-                    handler.context or @,
-                    params)
+                todos.push handler
                 if handler.once
                     once = true
             if once
                 @_events[event] = handlers.filter (item)->item.once isnt true
+        for handler in todos
+            handler.callback.apply(
+                handler.context or @,
+                params)
         return this
     once:(event,callback,context)->
         handlers = @_events[event] = @_events[event] || []
@@ -70,16 +80,11 @@ class EventEmitter
                     return false
             return true
         return this
-    stopAllBubble:()->
+    stopAllBubbles:()->
         for item in @_bubbles
             item.emitter.removeListener item.event,item.listener
-        @_bubbles = null
+        @_bubbles.length = 0
         return this
-    destroy:()->
-        @_events = null
-        @stopAllBubble()
-        @isDestroy = true
-        return null
     listenBy:(who,event,callback,context)->
         @_events[event] = @_events[event] or []
         handlers = @_events[event]
