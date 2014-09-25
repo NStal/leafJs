@@ -1,0 +1,29 @@
+{
+  "name": "leafJs",
+  "version": "1.0.0",
+  "description": "a frontend MVW framework",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc",
+    "test": "test"
+  },
+  "dependencies": {
+    "mocha": "^1.21.4"
+  },
+  "devDependencies": {
+    "mocha": "^1.21.4"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NStal/leafJs.git"
+  },
+  "author": "NStal",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NStal/leafJs/issues"
+  },
+  "homepage": "https://github.com/NStal/leafJs"
+}
