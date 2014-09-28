@@ -119,4 +119,3 @@ class TemplateManager extends Leaf.EventEmitter
             )()
         return null
 exports.TemplateManager = TemplateManager
-

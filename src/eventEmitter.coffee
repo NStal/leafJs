@@ -104,3 +104,4 @@ class EventEmitter
             @_events[event] = handlers.filter (item)->item
         return this
 exports.EventEmitter = EventEmitter
+

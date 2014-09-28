@@ -40,3 +40,4 @@ class ErrorFactory
     @create = ()->
         return new ErrorFactory()
 Leaf.ErrorFactory = ErrorFactory
+
