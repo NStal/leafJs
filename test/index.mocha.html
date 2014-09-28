@@ -12,9 +12,11 @@
     <script type="text/javascript">
       mocha.setup("bdd")
     </script>
-    <script type="text/javascript" src="./leaf.js"></script>
+    <script type="text/javascript" src="lib/blanket.min.js" data-cover-adapter="lib/mocha-blanket.js" data-cover-flag="debug"></script>
+    <script type="text/javascript" data-cover src="./leaf.js"></script>
     <script type="text/javascript" src="./mochas/basic.js"></script>
     <script type="text/javascript" src="./mochas/data.js"></script>
+    <script type="text/javascript" src="./mochas/view.js"></script>
     <script type="text/javascript">
       mocha.run();
     </script>

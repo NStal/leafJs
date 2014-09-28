@@ -287,3 +287,4 @@ class Widget extends Leaf.EventEmitter
 #    Widget.namespace = ns
 #    Widget.ns = ns
 #Leaf.setGlobalNamespace(new Namespace())
+

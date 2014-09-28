@@ -1,4 +1,3 @@
-
 class TemplateManager extends Leaf.EventEmitter
     constructor: ()->
         super()

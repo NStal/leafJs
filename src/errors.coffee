@@ -21,7 +21,6 @@ Util.createError = (name,args...)->
                 if props.hasOwnProperty prop
                     @[prop] = props[prop]
         name:name
-    console.debug "extends",name,"with",BaseError.name
     return CustomError
 class ErrorFactory
     constructor:()->
@@ -31,7 +30,6 @@ class ErrorFactory
             if not @errors[base]
                 throw new Error "base error #{base} not found"
             else
-                console.debug "use base",base
                 base = @errors[base]
         @errors[name] = Util.createError(name,base,meta)
         return this

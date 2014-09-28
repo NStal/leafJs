@@ -5,7 +5,7 @@ class Collection extends EventEmitter
         @id = null
         @__defineGetter__ "length",()=>
             return @models.length
-    exists:(model)->
+    contain:(model)->
         if @get model
             return true
         return false
@@ -21,6 +21,17 @@ class Collection extends EventEmitter
                 if item.data[prop] isnt obj[prop]
                     return false
             return true
+    findOne:(obj)->
+        if not obj
+            return @models.slice()
+        result = null
+        @models.some (item)->
+            for prop of obj
+                if item.data[prop] isnt obj[prop]
+                    return false
+            result = item
+            return true
+        return result
     get:(model)->
         target = null
         if @id
@@ -43,6 +54,8 @@ class Collection extends EventEmitter
         if target
             return target
         return null
+    validate:(model)->
+        return true
     add:(model)->
         if not (model instanceof Model)
             throw new Error "add invalid model, not instanceof Leaf.Model"
@@ -70,9 +83,6 @@ class Collection extends EventEmitter
         @emit "remove",target
         return true
     _attachModel:(model)->
-        model.listenBy this,"destroy",()=>
-            @remove model
-            @emit "destroy/model",model
         model.listenBy this,"change",(key,value)=>
             if @id and key is @id
                 throw new Error "shouldn't change id #{key} for model inside a the collection"
@@ -80,7 +90,4 @@ class Collection extends EventEmitter
             @emit "change/model/#{key}",model,key,value
     _detachModel:(model)->
         model.stopListenBy this
-    destroy:()->
-        @empty()
-        super()
 Leaf.Collection = Collection
