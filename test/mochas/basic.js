@@ -296,6 +296,7 @@
   describe("error factory", function() {
     return it("test Error factory", function(done) {
       var Errors, invalidParameter, ioError, networkError, nto;
+      console.debug(Leaf);
       Errors = Leaf.ErrorFactory.create().define("IOError").define("LogicError").define("NetworkError", "IOError").define("InvalidParameter", "LogicError", {
         message: "You are so stupid to provide a valid parameters I guess"
       }).define("NetworkTimeout", "NetworkError").generate();

@@ -204,6 +204,7 @@ describe "Util tests",()->
 
 describe "error factory",()->
     it "test Error factory",(done)->
+        console.debug Leaf
         Errors = Leaf.ErrorFactory.create()
             .define("IOError")
             .define("LogicError")
