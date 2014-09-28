@@ -356,7 +356,9 @@
 
   Leaf.Util = Util;
 
-  Leaf.EventEmitter = EventEmitterUtil.createError = function() {
+  Leaf.EventEmitter = EventEmitter;
+
+  Util.createError = function() {
     var BaseError, CustomError, args, meta, name;
     name = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
     args = args.filter(function(item) {
