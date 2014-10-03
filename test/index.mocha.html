@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE-edge">
+    <title>leaf-require test</title>
+    <link rel="stylesheet" href="lib/mocha.css" type="text/css" media="screen" />
+  </head>
+  <body>
+    <div id="mocha"></div> 
+    
+    <script type="text/javascript" src="lib/mocha.js"></script>
+    <script type="text/javascript">
+      mocha.setup("bdd")
+    </script>
+    <script type="text/javascript" src="lib/blanket.min.js" data-cover-adapter="lib/mocha-blanket.js" data-cover-flag="debug"></script>
+    <script type="text/javascript" data-cover src="./leaf.js"></script>
+    <script type="text/javascript" src="./mochas/basic.js"></script>
+    <script type="text/javascript" src="./mochas/data.js"></script>
+    <script type="text/javascript" src="./mochas/view.js"></script>
+    <script type="text/javascript">
+      mocha.run();
+    </script>
+  </body>
+</html>

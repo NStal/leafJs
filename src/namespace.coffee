@@ -56,3 +56,4 @@ class Namespace extends Leaf.EventEmitter
         # done
         
 Leaf.Namespace = Namespace
+

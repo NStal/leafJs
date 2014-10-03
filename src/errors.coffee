@@ -1,26 +1,13 @@
 Util.createError = (name,args...)->
     args = args.filter (item)->item
     meta = {}
-    if args.length is 0
-        BaseError = Error
-        meta = {}
-    else if args.length is 1
-        if args[0] instanceof Error
-            BaseError = args[0]
-            meta = {}
-        else
-            BaseError = Error
-            meta = args[0]
-    else if args.length is 2
-        if args[0] instanceof Error
-            BaseError = args[0]
+    BaseError = Error
+    if args[0] and args[0].prototype and  Error.prototype.isPrototypeOf(args[0].prototype)
+        BaseError = args[0]
+        if typeof args[1] is "object"
             meta = args[1]
-        else
-            BaseError = args[1]
-            meta = args[0]
-    else
-        BaseError = Error
-    console.debug BaseError,Error
+    else if args[0] and typeof args[0] is "object"
+        meta = args[0]
     class CustomError extends BaseError
         @name = name
         constructor:(message,props = {})->
@@ -39,6 +26,11 @@ class ErrorFactory
     constructor:()->
         @errors = {}
     define:(name,base,meta)->
+        if typeof base is "string"
+            if not @errors[base]
+                throw new Error "base error #{base} not found"
+            else
+                base = @errors[base]
         @errors[name] = Util.createError(name,base,meta)
         return this
     generate:()->

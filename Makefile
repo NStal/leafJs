@@ -8,7 +8,7 @@ compiled/leaf.min.js : compiled/leaf.js
 	@uglifyjs compiled/leaf.js > compiled/leaf.min.js
 compiled/leaf.js : $(FRONTCOFFEE)
 	@[ -f compiled/leaf.js ] && rm compiled/leaf.js  || echo clean
-	@cd src;coffee -j ../compiled/leaf.js -c $(FRONTCOFFEE);cd ..;
+	@cd src;cat $(FRONTCOFFEE) | coffee -p -s > ../compiled/leaf.js -c ;cd ..;
 	@echo done
 $(FRONTJS) : %.js : %.coffee
 	@echo generate $@

@@ -1,4 +1,3 @@
-
 class TemplateManager extends Leaf.EventEmitter
     constructor: ()->
         super()
@@ -76,14 +75,14 @@ class TemplateManager extends Leaf.EventEmitter
             
     _fromDomAll:()->
         try
-            return JSON.parse(document.getElementById("leaf-templates").innerHTML)
+            return JSON.parse(document.querySelector("[data-json-templates]").innerHTML)
         catch e
             return {}
     #return templatesJson with member of tid that are found in DOM
     _fromDomForEach:(tids)->
         templates = {}
         for tid in tids
-            templateNode = document.getElementById("leaf-templates-#{tid}");
+            templateNode = document.querySelector("[data-template-name='#{tid}']");
             templates[tid] = if templateNode then templateNode.innerHTML else undefined
         templates
     #callback err,tid,

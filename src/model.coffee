@@ -1,3 +1,4 @@
+
 # set/get is generally savior than direct assignment
 # the difference is set/get on undeclares model property will throw error
 # and also set will force an change event even if the value is the as the old one
@@ -6,7 +7,7 @@
 # but in general they are the same, assign them a new value will auto trigger a change event
 # if the value is really changed
 class Model extends EventEmitter
-    constructor:()->
+    constructor:(raw = {})->
         super()
         data = {}
         @__defineGetter__ "data",()=>
@@ -17,6 +18,17 @@ class Model extends EventEmitter
         @_idprop = null
         @_silent = false
         @_ref = 0
+        # initialize
+        if @fields instanceof Array
+            for field in @fields
+                @declare field
+        else if @fields and typeof @fields is "object"
+            for field of @fields
+                @declare field
+            @defaults @fields
+        @data = raw
+    # has means the field is defined
+    # one can always use model.data[field] to get the
     has:(name)->
         if @_defines[name]
             return true
@@ -91,9 +103,10 @@ class Model extends EventEmitter
         @_silent = false
     preset:(key,value)->
         if not @_defines[key]
-            throw new Error "undefined model property #{key}"
-        @_defines[key].old = @data[key]
-        @_defines[key].stable = false
+            throw new Error "undefined model property #{key} for #{@constructor.name}"
+        if not @_defines[key].unstable
+            @_defines[key].old = @data[key]
+        @_defines[key].unstable = true
         @data[key] = value
     presets:(obj)->
         for prop of obj
@@ -105,34 +118,27 @@ class Model extends EventEmitter
                 @undo prop
             return
         if not @_defines[key]
-            throw new Error "undefined model property #{key}"
-        if @_defines[key].stable is false
+            throw new Error "undefined model property #{key} for #{@constructor.name}"
+        if @_defines[key].unstable
             @data[key] = @_defines[key].old
-            @_defines[key].stable = true
+            @_defines[key].unstable = false
+            delete @_defines[key].old
     confirm:(key)->
         if not key
             for prop of @_defines
                 @confirm prop
             return
-        if @_defines[key].stable is false
-            @_defines[key].old = @data[key]
-            @_defines[key].stable = true
-    destroy:()->
-        # prevent recursive
-        if @isDestroy
-            return
-        @isDestroy = true
-        @emit "destroy"
-        super()
-        @_defines = null
+        if @_defines[key].unstable 
+            delete @_defines[key].old
+            @_defines[key].unstable = false
     toJSON:(option = {})->
         complete = option.complete
-        filter = option.filter
+        fields = option.fields
         result = {}
         for prop of @_defines
             if typeof @data[prop] is "undefined" and not complete
                 continue
-            if filter instanceof Array and prop not in filter
+            if fields instanceof Array and prop not in fields
                 continue
             result[prop] = @data[prop]
             if result[prop] instanceof Array
@@ -146,10 +152,5 @@ class Model extends EventEmitter
                 result[prop] = result[prop].toJSON({complete:complete})
             
         return result
-    retain:()->
-        @_ref++
-    release:()->
-        @_ref--
-        if @_ref <= 0
-            @destroy()
 Leaf.Model = Model
+
