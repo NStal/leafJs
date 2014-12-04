@@ -63,8 +63,12 @@ class Widget extends Leaf.EventEmitter
         for tmpl in templateNodes
             template = tmpl.innerHTML
             name = tmpl.getAttribute("data-name")
-            if tmpl.parentElement
-                tmpl.parentElement.removeChild(tmpl)
+        # hide template instead of remove it
+        # so it can be captured by child
+            if tmpl
+                tmpl.style.display = "none"
+#            if tmpl.parentElement and @node.contains tmpl
+#                tmpl.parentElement.removeChild(tmpl)
             if name
                 @templates[name] = template
     expose:(name,remoteName)->
@@ -147,7 +151,7 @@ class Widget extends Leaf.EventEmitter
     initDelegates:()->
         if @disableDelegates
             return
-        events = ["click","mouseup","mousedown","mousemove","mouseleave","mouseenter","keydown","keyup","keypress"]
+        events = ["click","mouseup","mousedown","mousemove","mouseleave","mouseenter","mouseover","keydown","keyup","keypress"]
         for event in events
             do (event)=>
                 @node.addEventListener event,(e)=>
@@ -278,26 +282,6 @@ class Widget extends Leaf.EventEmitter
         if target instanceof Leaf.Widget
             target.node.innerHTML = ""
         @appendTo(target)
-    use:(model)->
-        @_models.push model
-        model.listenBy this,"destroy",()=>
-            @_models = @_models.filter (item)->item isnt model
-        model.retain()
-    destroy:()->
-        # prevent recursive
-        if @isDestroy
-            return
-        @isDestroy = true
-        # emit before clean eventemitter
-        @emit "destroy"
-        super()
-        for model in @_models
-            model.release()
-            model.stopListenBy(this)
-        @UI = null
-        @node = null
-        @node$ = null
-        @$node = null
 #Leaf.setGlobalNamespace = (ns)->
 #    Widget.namespace = ns
 #    Widget.ns = ns

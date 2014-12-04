@@ -9,7 +9,6 @@ class Widget extends Widget
                 return @renderDataModel.data
             else
                 return null
-        # read-only alias for renderData
         @__defineGetter__ "Data",()=>
             return @renderData
 
@@ -24,7 +23,6 @@ class Widget extends Widget
         @initRenderData()
         if oldModel
             @renderData = oldModel.data
-            oldModel.destroy()
     initRenderData:()->
         attrs = Widget.attrs
         selector = (attrs.map (item)->"[data-#{item}]").join(",")
@@ -52,20 +50,21 @@ class Widget extends Widget
     _classRole:(elem,whos)->
         whos = whos.split(",").map((item)->item.trim()).filter (item)->item
         for who in whos
-            if not @renderDataModel.has who
-                @renderDataModel.declare who
-            oldClass = "";
-            @renderDataModel.listenBy elem,"change/#{who}",(value)=>
-                if value and elem.classList.contains value
-                    if oldClass and elem.classList.contains oldClass
+            do (who)=>
+                if not @renderDataModel.has who
+                    @renderDataModel.declare who
+                oldClass = "";
+                @renderDataModel.listenBy elem,"change/#{who}",(value)=>
+                    if value and elem.classList.contains value
+                        if oldClass and elem.classList.contains oldClass
+                            elem.classList.remove oldClass
+                        oldClass = value
+                        return
+                    if oldClass
                         elem.classList.remove oldClass
+                    if value and not elem.classList.contains(value)
+                        elem.classList.add value
                     oldClass = value
-                    return
-                if oldClass
-                    elem.classList.remove oldClass
-                if value and not elem.classList.contains(value)
-                    elem.classList.add value
-                oldClass = value
     _attributeRole:(elem,whats="")->
         whats = whats.split(",").map((item)->item.trim().split(":")).filter (pair)->pair.length is 1 or pair.length is 2
         for pair in whats
@@ -80,11 +79,6 @@ class Widget extends Widget
         @_attributeRole(elem,"value:#{who}")
     _srcRole:(elem,who)->
         @_attributeRole(elem,"src:#{who}")
-    destroy:()->
-        @renderDataModel.destroy()
-        @renderDataModel = null
-        @renderData = null
-        super()
 
 class List extends Widget
     constructor:(template,create)->
@@ -107,12 +101,11 @@ class List extends Widget
                 @_length = value
                 for item in toRemove
                     @_detach(item)
-                
+
         })
     init:(create)->
         @create = create or @create or (item)=>return item
         @_length = 0
-        @node.innerHTML = ""
     map:(args...)->
         [].map.apply(this,args)
     some:(args...)->
@@ -196,7 +189,7 @@ class List extends Widget
                 @check item
                 item.after achor
                 @_attach item
-                
+
         # now make list match DOM
         # I make the hole left by remove "count" items
         # match the toAdd.length by shifting them one by one
@@ -207,10 +200,10 @@ class List extends Widget
             for origin in [index+count...@_length]
                 @[origin+increase] = @[origin]
         else if increase > 0
-            for origin in [@_length-1...index+count-1] 
+            for origin in [@_length-1...index+count-1]
                 @[origin+increase] = @[origin]
-            
-            
+
+
         # fill the hole
         for item,offset in toAddFinal
             @[index+offset] = item
@@ -244,8 +237,6 @@ class List extends Widget
 #        return this
     _attach:(item)->
         item.parentList = this
-        item.listenBy this,"destroy",()=>
-            @removeItem item
         @emit "child/add",item
     _detach:(item)->
         item.parentList = null
@@ -259,9 +250,6 @@ class List extends Widget
         @emit "child/remove",item
     sort:(judge)->
         @sync @toArray().sort(judge)
-    destroy:()->
-        @length = 0
-        super()
 Widget.List = List
 Widget.makeList = (node,create)=>
     return new Widget.List(node,create)

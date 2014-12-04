@@ -17,14 +17,13 @@
 #    but in case we know how to recover from the current state, we may over
 #    write atPanic handler to suppress the panic event
 class States extends Leaf.EventEmitter
-    @Errors = Leaf.ErrorFactory.create()
+    @Errors = Leaf.ErrorDoc.create()
         .define("InvalidState")
         .define("AlreadyDestroyed")
         .generate()
     constructor:()->
         @state = "void"
         @lastException = null
-        @states = {}
         @data = {}
         super()
     declare:(states...)->

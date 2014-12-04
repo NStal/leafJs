@@ -22,7 +22,7 @@ Util.createError = (name,args...)->
                     @[prop] = props[prop]
         name:name
     return CustomError
-class ErrorFactory
+class ErrorDoc
     constructor:()->
         @errors = {}
     define:(name,base,meta)->
@@ -36,5 +36,5 @@ class ErrorFactory
     generate:()->
         return @errors
     @create = ()->
-        return new ErrorFactory()
-Leaf.ErrorFactory = ErrorFactory
+        return new ErrorDoc()
+Leaf.ErrorDoc = ErrorDoc

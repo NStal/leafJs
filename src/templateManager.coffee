@@ -23,14 +23,14 @@ class TemplateManager extends Leaf.EventEmitter
             if @_isRequirementComplete()
                 @_ready()
                 return this
-                
+
         all = @_fromDomAll()
         for tid in @tids
             @templates[tid] = all[tid]
         if @_isRequirementComplete()
             @_ready()
             return this
-            
+
         remain = @_getNotCompleteRequirements()
         remainTemplates = @_fromDomForEach(remain)
         for tid in remain
@@ -38,13 +38,13 @@ class TemplateManager extends Leaf.EventEmitter
         if @_isRequirementComplete()
             @_ready()
             return this
-    
+
         remain = @_getNotCompleteRequirements()
         @_fromXHRForEach(remain,
             (err,tid,template)=>
                 if err?
                     @emit("error",err)
-                    return 
+                    return
                 @templates[tid] = template
                 if @_isRequirementComplete()
                     @_ready()
@@ -52,7 +52,40 @@ class TemplateManager extends Leaf.EventEmitter
     _ready:()->
         if @enableCache and window.localStorage
             window.localStorage.setItem @cacheName,JSON.stringify @templates
+        @templates = @_extendNestedTemplates(@templates)
         @emit "ready",@templates
+    _extendNestedTemplates:(templates)->
+        result = {}
+        for prop of templates
+            pathes = prop.split("/")
+            # also attatch the full path as a single property
+            result[prop] = templates[prop]
+            root = result
+            for part,index in pathes
+                if index is pathes.length - 1
+                    # conflict with object
+                    if typeof root[part] is "object"
+                        root["root"] = templates[prop]
+                    # conflict with other must be "string"
+                    # just overwrite
+                    else if root[part]
+                        root[part] = templates[prop]
+                    # not exists
+                    else
+                        root[part] = templates[prop]
+                else
+                    if typeof root[part] is "string"
+                        value = root[part]
+                        root[part] = {}
+                        root[part].root = value
+                    else if typeof root[part] is "object"
+                        # do nothing
+                        true
+                    else
+                        root[part] = {}
+                root = root[part]
+        return result
+
     _getNotCompleteRequirements:()->
         (tid for tid in @tids when !@templates[tid])
     _isRequirementComplete: ()->
@@ -72,7 +105,7 @@ class TemplateManager extends Leaf.EventEmitter
             return templates
         catch e
             return {}
-            
+
     _fromDomAll:()->
         try
             return JSON.parse(document.querySelector("[data-json-templates]").innerHTML)
@@ -93,12 +126,12 @@ class TemplateManager extends Leaf.EventEmitter
             else
                 targetURI = @baseUrl+tid+@suffix
             (()=>
-                XHR = new XMLHttpRequest() 
+                XHR = new XMLHttpRequest()
                 XHR.open("GET",targetURI,true)
                 XHR.send(null)
                 XHR.tid = tid
                 XHR.terminator = setTimeout(()=>
-                    callback("timeout",XHR.tid,null) 
+                    callback("timeout",XHR.tid,null)
                     XHR.done = true
                     XHR.abort()
                 ,@timeout)
@@ -108,13 +141,13 @@ class TemplateManager extends Leaf.EventEmitter
                     if @readyState is 0
                         callback new Error "fail to load template"
                         return
-                    if @readyState is 4 
+                    if @readyState is 4
                         @done = true
                         if not @status or @status in [200,302,304]
                             callback(null,@tid,@responseText)
                         else
                             callback(@status,@tid,null)
-                            
+
             )()
         return null
 exports.TemplateManager = TemplateManager

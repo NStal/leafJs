@@ -23,7 +23,7 @@ class Collection extends EventEmitter
             return true
     findOne:(obj)->
         if not obj
-            return @models.slice()
+            return @models[0]
         result = null
         @models.some (item)->
             for prop of obj
