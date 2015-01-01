@@ -9,13 +9,13 @@ class EventEmitter
             obj[prop] = em[prop]
         return obj
     constructor: ()->
-        @_events = {}
-        @_bubbles = []
+        @_events ?= {}
+        @_bubbles ?= []
         #alias
-        @trigger = @emit
+#        @trigger ?= @emit
     addListener:(event,callback,context)->
         handlers = @_events[event] = @_events[event] || []
-        handler = 
+        handler =
             callback:callback
             context:context
         handlers.push handler
@@ -56,7 +56,7 @@ class EventEmitter
         return this
     once:(event,callback,context)->
         handlers = @_events[event] = @_events[event] || []
-        handler = 
+        handler =
             callback:callback
             context:context
             once:true
@@ -88,7 +88,7 @@ class EventEmitter
     listenBy:(who,event,callback,context)->
         @_events[event] = @_events[event] or []
         handlers = @_events[event]
-        handler = 
+        handler =
             callback:callback
             context:context or who
             owner:who
@@ -104,4 +104,3 @@ class EventEmitter
             @_events[event] = handlers.filter (item)->item
         return this
 exports.EventEmitter = EventEmitter
-

@@ -127,8 +127,11 @@ class List extends Widget
         item = @create(item)
         @check item
         @[@_length]=item
+        if @_length isnt 0
+            item.after @[@_length-1]
+        else
+            item.appendTo @node
         @_length++
-        item.appendTo @node
         @_attach(item)
     pop:()->
         if @_length is 0
@@ -142,7 +145,7 @@ class List extends Widget
         item = @create(item)
         @check item
         if @_length is 0
-            item.appendTo @node
+            item.prependTo @node
             @[0] = item
             @_length = 1
             @_attach(item)
@@ -151,7 +154,7 @@ class List extends Widget
             @[index] = @[index-1]
         @[0] = item
         @_length += 1
-        item.prependTo @node
+        item.before @[1]
         @_attach(item)
         return @_length
     removeItem:(item)->
@@ -238,6 +241,7 @@ class List extends Widget
     _attach:(item)->
         item.parentList = this
         @emit "child/add",item
+        @emit "child/change"
     _detach:(item)->
         item.parentList = null
         node = item.node
@@ -248,6 +252,7 @@ class List extends Widget
         # and this is likely to be the case
         item.stopListenBy this
         @emit "child/remove",item
+        @emit "child/change"
     sort:(judge)->
         @sync @toArray().sort(judge)
 Widget.List = List

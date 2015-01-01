@@ -40,16 +40,17 @@ class TemplateManager extends Leaf.EventEmitter
             return this
 
         remain = @_getNotCompleteRequirements()
-        @_fromXHRForEach(remain,
-            (err,tid,template)=>
-                if err?
-                    @emit("error",err)
-                    return
-                @templates[tid] = template
-                if @_isRequirementComplete()
-                    @_ready()
-        )
+        @_fromXHRForEach remain,(err,tid,template)=>
+            if err?
+                @emit("error",err)
+                return
+            @templates[tid] = template
+            if @_isRequirementComplete()
+                @_ready()
     _ready:()->
+        if @isReady
+            return
+        @isReady = true
         if @enableCache and window.localStorage
             window.localStorage.setItem @cacheName,JSON.stringify @templates
         @templates = @_extendNestedTemplates(@templates)

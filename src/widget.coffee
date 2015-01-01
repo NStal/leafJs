@@ -1,9 +1,19 @@
 class Widget extends Leaf.EventEmitter
-    constructor:(template)->
+    constructor:(option = null)->
         super()
+        template = null
+        if not option
+            template = null
+        else if typeof option is "string"
+            template = option
+        else if Util.isHTMLNode option
+            template = option
+        else if typeof option is "object"
+            template = option.node or option.template or null
+
         @namespace = @namespace or (@constructor and @constructor.namespace) or new Leaf.Namespace()
-        @template = template or @template or = "<div></div>"
-        @node = null 
+        @template = template or @template or document.createElement "div"
+        @node = null
         @$node = null
         @node$ = null
         @UI = {}
@@ -73,10 +83,12 @@ class Widget extends Leaf.EventEmitter
                 @templates[name] = template
     expose:(name,remoteName)->
         remoteName = remoteName or name
+        # expose method
         if @[name] and typeof @[name] is "function"
             @node.__defineGetter__ remoteName,()=>
                 return @[name].bind(this)
         else
+        # expose property
             capName = Util.capitalize name
             getterName = "onGet#{capName}"
             setterName = "onSet#{capName}"
@@ -86,7 +98,7 @@ class Widget extends Leaf.EventEmitter
                 return @[name]
             @node.__defineSetter__ remoteName,(value)=>
                 if @[setterName]
-                    @[setterName](value,"property") 
+                    @[setterName](value,"property")
                 else
                     @[name] = value
 #    initDelegates:()->
@@ -105,7 +117,7 @@ class Widget extends Leaf.EventEmitter
             name = elem.dataset.widget
             widget = (@[name] instanceof Widget) and @[name] or @namespace.createWidgetByElement(elem)
             if not widget
-                console.warn "#{elem.tagName}has name but no widget and no namespace present for it"
+                console.warn "#{elem.tagName} has name #{name} but no widget nor no namespace present for it."
                 continue
             # replace is safe even elem is widget.node
             widget.replace elem
@@ -119,7 +131,7 @@ class Widget extends Leaf.EventEmitter
                 @[name] = widget
             if elem.dataset.id
                 @_bindUI(widget.node,elem.dataset.id)
-    
+
     initUI:()->
         node = @node
         elems = node.querySelectorAll "[data-id]"
@@ -131,10 +143,10 @@ class Widget extends Leaf.EventEmitter
                 continue
             if id = subNode.getAttribute "data-id"
                 @_bindUI(subNode,id)
-                @_delegateUnBubbleEvent(id) 
+                @_delegateUnBubbleEvent(id)
         @_delegateUnBubbleEvent()
         return true
-    _bindUI:(node,id)->        
+    _bindUI:(node,id)->
             @UI[id] = node
             node.widget = this
             node.uiId = id
@@ -180,7 +192,7 @@ class Widget extends Leaf.EventEmitter
                             if source is @node
                                 break
                             source = source.parentElement
-                
+
     _delegateUnBubbleEvent:(name)->
         if @disableDelegates
             return
@@ -214,7 +226,7 @@ class Widget extends Leaf.EventEmitter
     appendTo:(target)->
         if Util.isHTMLElement(target)
             target.appendChild(@node)
-            return true 
+            return true
         if target instanceof Leaf.Widget
             target.node.appendChild(@node)
     replace:(target)->
@@ -227,7 +239,7 @@ class Widget extends Leaf.EventEmitter
         if Util.isHTMLElement(target) and target.parentElement
             target.parentElement.removeChild target
             return
-            
+
     prependTo:(target)->
         if Util.isHTMLElement(target)
             target = target

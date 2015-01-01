@@ -27,9 +27,12 @@
     };
 
     function EventEmitter() {
-      this._events = {};
-      this._bubbles = [];
-      this.trigger = this.emit;
+      if (this._events == null) {
+        this._events = {};
+      }
+      if (this._bubbles == null) {
+        this._bubbles = [];
+      }
     }
 
     EventEmitter.prototype.addListener = function(event, callback, context) {
@@ -1274,6 +1277,10 @@
       _ref1 = elem.attributes;
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         attr = _ref1[_j];
+        if (attr.name === "class") {
+          widget.node.className += " " + attr.value;
+          continue;
+        }
         widget.node.setAttribute(attr.name, attr.value);
         widget.node[attr.name] = attr.value;
       }
@@ -1293,10 +1300,24 @@
   Widget = (function(_super) {
     __extends(Widget, _super);
 
-    function Widget(template) {
+    function Widget(option) {
+      var template;
+      if (option == null) {
+        option = null;
+      }
       Widget.__super__.constructor.call(this);
+      template = null;
+      if (!option) {
+        template = null;
+      } else if (typeof option === "string") {
+        template = option;
+      } else if (Util.isHTMLNode(option)) {
+        template = option;
+      } else if (typeof option === "object") {
+        template = option.node || option.template || null;
+      }
       this.namespace = this.namespace || (this.constructor && this.constructor.namespace) || new Leaf.Namespace();
-      this.template = template || (this.template || (this.template = "<div></div>"));
+      this.template = template || this.template || document.createElement("div");
       this.node = null;
       this.$node = null;
       this.node$ = null;
@@ -1422,7 +1443,7 @@
         name = elem.dataset.widget;
         widget = (this[name] instanceof Widget) && this[name] || this.namespace.createWidgetByElement(elem);
         if (!widget) {
-          console.warn("" + elem.tagName + "has name but no widget and no namespace present for it");
+          console.warn("" + elem.tagName + " has name " + name + " but no widget nor no namespace present for it.");
           continue;
         }
         widget.replace(elem);
@@ -1975,8 +1996,12 @@
       item = this.create(item);
       this.check(item);
       this[this._length] = item;
+      if (this._length !== 0) {
+        item.after(this[this._length - 1]);
+      } else {
+        item.appendTo(this.node);
+      }
       this._length++;
-      item.appendTo(this.node);
       return this._attach(item);
     };
 
@@ -1997,7 +2022,7 @@
       item = this.create(item);
       this.check(item);
       if (this._length === 0) {
-        item.appendTo(this.node);
+        item.prependTo(this.node);
         this[0] = item;
         this._length = 1;
         this._attach(item);
@@ -2008,7 +2033,7 @@
       }
       this[0] = item;
       this._length += 1;
-      item.prependTo(this.node);
+      item.before(this[1]);
       this._attach(item);
       return this._length;
     };
@@ -2123,7 +2148,8 @@
 
     List.prototype._attach = function(item) {
       item.parentList = this;
-      return this.emit("child/add", item);
+      this.emit("child/add", item);
+      return this.emit("child/change");
     };
 
     List.prototype._detach = function(item) {
@@ -2134,7 +2160,8 @@
         this.node.removeChild(node);
       }
       item.stopListenBy(this);
-      return this.emit("child/remove", item);
+      this.emit("child/remove", item);
+      return this.emit("child/change");
     };
 
     List.prototype.sort = function(judge) {
@@ -2235,6 +2262,10 @@
     };
 
     TemplateManager.prototype._ready = function() {
+      if (this.isReady) {
+        return;
+      }
+      this.isReady = true;
       if (this.enableCache && window.localStorage) {
         window.localStorage.setItem(this.cacheName, JSON.stringify(this.templates));
       }
