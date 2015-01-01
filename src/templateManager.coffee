@@ -7,6 +7,12 @@ class TemplateManager extends Leaf.EventEmitter
         @suffix = ".html"
         @timeout = 10000 #default timeout
         @enableCache = false
+        # Always add a random params to the request
+        # thus disabled the backend history.
+        # Since we are already capable of caching
+        # template in frontend, backend cache are
+        # more likely to cause problem.
+        @randomQuery = true
         @cacheName = "templateManagerCache"
     use: (tids...) ->
         @tids.push.apply @tids,tids
@@ -126,6 +132,11 @@ class TemplateManager extends Leaf.EventEmitter
                 targetURI = @baseUrl+tid
             else
                 targetURI = @baseUrl+tid+@suffix
+            if @randomQuery and targetURI
+                if targetURI.indexOf("?") >= 0
+                    targetURI += "&r=#{Math.random()}"
+                else
+                    targetURI += "?r=#{Math.random()}"
             (()=>
                 XHR = new XMLHttpRequest()
                 XHR.open("GET",targetURI,true)
