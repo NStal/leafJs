@@ -1277,7 +1277,7 @@
       _ref1 = elem.attributes;
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         attr = _ref1[_j];
-        if (attr.name === "class") {
+        if (attr.name === "class" && widget.node.className) {
           widget.node.className += " " + attr.value;
           continue;
         }
@@ -1722,43 +1722,31 @@
     Widget.attrs = ["text", "html", "class", "value", "attribute", "src"];
 
     function Widget(template) {
+      this._ViewModel = new Model();
       Widget.__super__.constructor.call(this, template);
-      this.__defineGetter__("renderData", (function(_this) {
-        return function() {
-          if (_this.renderDataModel) {
-            return _this.renderDataModel.data;
-          } else {
-            return null;
-          }
-        };
-      })(this));
       this.__defineGetter__("Data", (function(_this) {
         return function() {
-          return _this.renderData;
+          return _this._ViewModel.data;
         };
       })(this));
-      this.__defineSetter__("renderData", (function(_this) {
+      this.__defineGetter__("VM", (function(_this) {
+        return function() {
+          return _this._ViewModel.data;
+        };
+      })(this));
+      this.__defineSetter__("VM", (function(_this) {
         return function(value) {
-          if (_this.renderDataModel) {
-            return _this.renderDataModel.data = value;
-          }
+          return _this._ViewModel.data = value;
         };
       })(this));
     }
 
     Widget.prototype.initTemplate = function(template) {
-      var oldModel;
-      oldModel = this.renderDataModel;
-      this.renderDataModel = new Model();
-      this.renderData = this.renderDataModel.data;
       Widget.__super__.initTemplate.call(this, template);
-      this.initRenderData();
-      if (oldModel) {
-        return this.renderData = oldModel.data;
-      }
+      return this.initViewModel();
     };
 
-    Widget.prototype.initRenderData = function() {
+    Widget.prototype.initViewModel = function() {
       var attrs, elem, elems, selector, _i, _len, _results;
       attrs = Widget.attrs;
       selector = (attrs.map(function(item) {
@@ -1790,14 +1778,14 @@
     };
 
     Widget.prototype.removeRenderRole = function(elem) {
-      return this.renderDataModel.stopListenBy(elem);
+      return this._ViewModel.stopListenBy(elem);
     };
 
     Widget.prototype._textRole = function(elem, who) {
-      if (!this.renderDataModel.has(who)) {
-        this.renderDataModel.declare(who);
+      if (!this._ViewModel.has(who)) {
+        this._ViewModel.declare(who);
       }
-      return this.renderDataModel.listenBy(elem, "change/" + who, (function(_this) {
+      return this._ViewModel.listenBy(elem, "change/" + who, (function(_this) {
         return function(value) {
           return elem.textContent = value;
         };
@@ -1805,10 +1793,10 @@
     };
 
     Widget.prototype._htmlRole = function(elem, who) {
-      if (!this.renderDataModel.has(who)) {
-        this.renderDataModel.declare(who);
+      if (!this._ViewModel.has(who)) {
+        this._ViewModel.declare(who);
       }
-      return this.renderDataModel.listenBy(elem, "change/" + who, (function(_this) {
+      return this._ViewModel.listenBy(elem, "change/" + who, (function(_this) {
         return function(value) {
           return elem.innerHTML = value;
         };
@@ -1827,12 +1815,25 @@
         who = whos[_i];
         _results.push((function(_this) {
           return function(who) {
-            var oldClass;
-            if (!_this.renderDataModel.has(who)) {
-              _this.renderDataModel.declare(who);
+            var className, oldClass, _ref;
+            if (who == null) {
+              who = "";
+            }
+            className = null;
+            _ref = who.split(":"), who = _ref[0], className = _ref[1];
+            if (!_this._ViewModel.has(who)) {
+              _this._ViewModel.declare(who);
             }
             oldClass = "";
-            return _this.renderDataModel.listenBy(elem, "change/" + who, function(value) {
+            return _this._ViewModel.listenBy(elem, "change/" + who, function(value) {
+              var decision;
+              if (className) {
+                decision = value;
+                value = className;
+                if (!decision) {
+                  value = "";
+                }
+              }
               if (value && elem.classList.contains(value)) {
                 if (oldClass && elem.classList.contains(oldClass)) {
                   elem.classList.remove(oldClass);
@@ -1872,10 +1873,10 @@
             var name, who;
             name = pair[0];
             who = pair[1] || name;
-            if (!_this.renderDataModel.has(who)) {
-              _this.renderDataModel.declare(who);
+            if (!_this._ViewModel.has(who)) {
+              _this._ViewModel.declare(who);
             }
-            return _this.renderDataModel.listenBy(elem, "change/" + who, function(value) {
+            return _this._ViewModel.listenBy(elem, "change/" + who, function(value) {
               return elem.setAttribute(name, value);
             });
           };
@@ -2193,6 +2194,7 @@
       this.suffix = ".html";
       this.timeout = 10000;
       this.enableCache = false;
+      this.randomQuery = true;
       this.cacheName = "templateManagerCache";
     }
 
@@ -2411,6 +2413,13 @@
           targetURI = this.baseUrl + tid;
         } else {
           targetURI = this.baseUrl + tid + this.suffix;
+        }
+        if (this.randomQuery && targetURI) {
+          if (targetURI.indexOf("?") >= 0) {
+            targetURI += "&r=" + (Math.random());
+          } else {
+            targetURI += "?r=" + (Math.random());
+          }
         }
         _fn();
       }

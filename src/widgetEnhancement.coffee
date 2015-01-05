@@ -3,27 +3,18 @@ class Widget extends Widget
     @namespace = WidgetBase.namespace
     @attrs = ["text","html","class","value","attribute","src"]
     constructor:(template)->
+        @_ViewModel = new Model()
         super template
-        @__defineGetter__ "renderData",()=>
-            if @renderDataModel
-                return @renderDataModel.data
-            else
-                return null
         @__defineGetter__ "Data",()=>
-            return @renderData
-
-        @__defineSetter__ "renderData",(value)=>
-            if @renderDataModel
-                @renderDataModel.data = value
+            return @_ViewModel.data
+        @__defineGetter__ "VM",()=>
+            return @_ViewModel.data
+        @__defineSetter__ "VM",(value)=>
+            @_ViewModel.data = value
     initTemplate:(template)->
-        oldModel = @renderDataModel
-        @renderDataModel = new Model()
-        @renderData = @renderDataModel.data
         super template
-        @initRenderData()
-        if oldModel
-            @renderData = oldModel.data
-    initRenderData:()->
+        @initViewModel()
+    initViewModel:()->
         attrs = Widget.attrs
         selector = (attrs.map (item)->"[data-#{item}]").join(",")
         elems = [].slice.call @node.querySelectorAll selector
@@ -36,25 +27,33 @@ class Widget extends Widget
             if info = elem.getAttribute("data-#{attr}")
                 @["_#{attr}Role"](elem,info)
     removeRenderRole:(elem)->
-        @renderDataModel.stopListenBy elem
+        @_ViewModel.stopListenBy elem
     _textRole:(elem,who)->
-        if not @renderDataModel.has who
-            @renderDataModel.declare who
-        @renderDataModel.listenBy elem,"change/#{who}",(value)=>
+        if not @_ViewModel.has who
+            @_ViewModel.declare who
+        @_ViewModel.listenBy elem,"change/#{who}",(value)=>
             elem.textContent = value
     _htmlRole:(elem,who)->
-        if not @renderDataModel.has who
-            @renderDataModel.declare who
-        @renderDataModel.listenBy elem,"change/#{who}",(value)=>
+        if not @_ViewModel.has who
+            @_ViewModel.declare who
+        @_ViewModel.listenBy elem,"change/#{who}",(value)=>
             elem.innerHTML = value
     _classRole:(elem,whos)->
         whos = whos.split(",").map((item)->item.trim()).filter (item)->item
         for who in whos
             do (who)=>
-                if not @renderDataModel.has who
-                    @renderDataModel.declare who
-                oldClass = "";
-                @renderDataModel.listenBy elem,"change/#{who}",(value)=>
+                who ?= ""
+                className = null
+                [who,className] = who.split(":")
+                if not @_ViewModel.has who
+                    @_ViewModel.declare who
+                oldClass = ""
+                @_ViewModel.listenBy elem,"change/#{who}",(value)=>
+                    if className
+                        decision = value
+                        value = className
+                        if not decision
+                            value = ""
                     if value and elem.classList.contains value
                         if oldClass and elem.classList.contains oldClass
                             elem.classList.remove oldClass
@@ -71,9 +70,9 @@ class Widget extends Widget
             do (pair)=>
                 name = pair[0]
                 who = pair[1] or name
-                if not @renderDataModel.has who
-                    @renderDataModel.declare who
-                @renderDataModel.listenBy elem,"change/#{who}",(value)=>
+                if not @_ViewModel.has who
+                    @_ViewModel.declare who
+                @_ViewModel.listenBy elem,"change/#{who}",(value)=>
                     elem.setAttribute name,value
     _valueRole:(elem,who)->
         @_attributeRole(elem,"value:#{who}")
