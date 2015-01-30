@@ -2680,7 +2680,7 @@
           url = _url;
           for (prop in data) {
             if (__indexOf.call(routeParams, prop) >= 0) {
-              url = url.replace(new RegExp(":" + prop, "g"), encodeURIComponent(data[prop]));
+              url = url.replace(new RegExp(":" + prop, "g"), _this.escapeRoutePram(data[prop]));
               delete data[prop];
             }
           }
@@ -2694,6 +2694,10 @@
           return xhr;
         };
       })(this);
+    };
+
+    RestApiFactory.prototype.escapeRoutePram = function(data) {
+      return encodeURIComponent(data);
     };
 
     RestApiFactory.prototype.parse = function(err, data, callback) {
