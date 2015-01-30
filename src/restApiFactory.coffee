@@ -27,7 +27,7 @@ class RestApiFactory
             url = _url
             for prop of data
                 if prop in routeParams
-                    url = url.replace(new RegExp(":"+prop,"g"),@escapeRoutePram(data[prop]))
+                    url = url.replace(new RegExp(":"+prop,"g"),@escapeRouteParam(data[prop]))
                     delete data[prop]
             reqOption = {
                 url:url
@@ -37,7 +37,7 @@ class RestApiFactory
             }
             xhr = @request reqOption,callback
             return xhr
-    escapeRoutePram:(data)->
+    escapeRouteParam:(data)->
         return encodeURIComponent data
     parse:(err,data = {},callback = ()-> true)->
         if err
