@@ -2355,7 +2355,7 @@
       item.parentList = null;
       node = item.node;
       if (node && node.parentElement === this.node) {
-        this.node.removeChild(node);
+        item.remove();
       }
       item.stopListenBy(this);
       this.emit("child/remove", item);
@@ -2680,7 +2680,7 @@
           url = _url;
           for (prop in data) {
             if (__indexOf.call(routeParams, prop) >= 0) {
-              url = url.replace(new RegExp(":" + prop, "g"), _this.escapeRoutePram(data[prop]));
+              url = url.replace(new RegExp(":" + prop, "g"), _this.escapeRouteParam(data[prop]));
               delete data[prop];
             }
           }
@@ -2696,7 +2696,7 @@
       })(this);
     };
 
-    RestApiFactory.prototype.escapeRoutePram = function(data) {
+    RestApiFactory.prototype.escapeRouteParam = function(data) {
       return encodeURIComponent(data);
     };
 

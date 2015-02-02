@@ -244,11 +244,10 @@ class List extends Widget
     _detach:(item)->
         item.parentList = null
         node = item.node
+        # One may overwrite the item::remove method
+        # to change the DOM behavior other than instant removeChild
         if node and node.parentElement is @node
-            @node.removeChild node
-        # can use item.remove method
-        # because an if remove is overwritten then things won't work
-        # and this is likely to be the case
+            item.remove()
         item.stopListenBy this
         @emit "child/remove",item
         @emit "child/change"
