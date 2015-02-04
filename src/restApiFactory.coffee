@@ -24,6 +24,10 @@ class RestApiFactory
         # remove : of param name
         routeParams = (_url.match(reg) or []).map (item)->item.substring(1)
         return (data,callback = ()->true )=>
+            if option.data
+                for prop of option.data
+                    if typeof data[prop] is "undefined"
+                        data[prop] = option.data[prop]
             url = _url
             for prop of data
                 if prop in routeParams

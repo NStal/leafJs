@@ -2677,6 +2677,13 @@
               return true;
             };
           }
+          if (option.data) {
+            for (prop in option.data) {
+              if (typeof data[prop] === "undefined") {
+                data[prop] = option.data[prop];
+              }
+            }
+          }
           url = _url;
           for (prop in data) {
             if (__indexOf.call(routeParams, prop) >= 0) {

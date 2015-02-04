@@ -44,6 +44,7 @@ class Widget extends Leaf.EventEmitter
                 tempNode = document.createElement("div");
                 tempNode.innerHTML = template.trim()
                 @node = tempNode.children[0]
+                tempNode.removeChild(@node)
         else if Util.isHTMLNode(template)
             @node = template
         @node.widget = this
