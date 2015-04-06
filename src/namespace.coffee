@@ -35,8 +35,8 @@ class Namespace extends Leaf.EventEmitter
         if @selectorCache
             extra.unshift(@selectorCache.trim())
         return extra.join(",")
-    createWidgetByElement:(elem)->
-        name = Util.capitalize Util.slugToCamel elem.tagName.toLowerCase()
+    createWidgetByElement:(elem,name)->
+        name = Util.capitalize Util.slugToCamel name or elem.tagName.toLowerCase()
         Constructor = @scope[name]
         if not Constructor
             return null

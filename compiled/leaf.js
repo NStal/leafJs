@@ -1455,9 +1455,9 @@
       return extra.join(",");
     };
 
-    Namespace.prototype.createWidgetByElement = function(elem) {
-      var Constructor, attr, name, param, widget, _i, _j, _len, _len1, _ref, _ref1;
-      name = Util.capitalize(Util.slugToCamel(elem.tagName.toLowerCase()));
+    Namespace.prototype.createWidgetByElement = function(elem, name) {
+      var Constructor, attr, param, widget, _i, _j, _len, _len1, _ref, _ref1;
+      name = Util.capitalize(Util.slugToCamel(name || elem.tagName.toLowerCase()));
       Constructor = this.scope[name];
       if (!Constructor) {
         return null;
@@ -1547,6 +1547,7 @@
           tempNode = document.createElement("div");
           tempNode.innerHTML = template.trim();
           this.node = tempNode.children[0];
+          tempNode.removeChild(this.node);
         }
       } else if (Util.isHTMLNode(template)) {
         this.node = template;
@@ -1563,6 +1564,9 @@
       if (oldNode && oldNode.parentElement && oldNode !== this.node) {
         oldNode.parentElement.insertBefore(this.node, oldNode);
         oldNode.parentElement.removeChild(oldNode);
+      }
+      if (this.node.nodeType === this.node.TEXT_NODE) {
+        return;
       }
       this.initSubTemplate();
       this.initUI();
@@ -1626,7 +1630,7 @@
     };
 
     Widget.prototype.initSubWidgets = function() {
-      var attr, elem, elems, name, selector, widget, _i, _j, _len, _len1, _ref, _results;
+      var elem, elems, selector, _i, _len, _results;
       if (this.namespace) {
         selector = this.namespace.getQuerySelector("widget");
       } else {
@@ -1637,30 +1641,33 @@
       _results = [];
       for (_i = 0, _len = elems.length; _i < _len; _i++) {
         elem = elems[_i];
-        name = elem.dataset.widget;
-        widget = (this[name] instanceof Widget) && this[name] || this.namespace.createWidgetByElement(elem);
-        if (!widget) {
-          console.warn("" + elem.tagName + " has name " + name + " but no widget nor no namespace present for it.");
-          continue;
-        }
-        widget.replace(elem);
-        if (this[name] === widget) {
-          _ref = elem.attributes;
-          for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-            attr = _ref[_j];
-            widget.node.setAttribute(attr.name, attr.value);
-          }
-        }
-        if ((name != null) && (this[name] == null)) {
-          this[name] = widget;
-        }
-        if (elem.dataset.id) {
-          _results.push(this._bindUI(widget.node, elem.dataset.id));
-        } else {
-          _results.push(void 0);
-        }
+        _results.push(this.initSubWidget(elem));
       }
       return _results;
+    };
+
+    Widget.prototype.initSubWidget = function(elem) {
+      var attr, name, widget, _i, _len, _ref;
+      name = elem.dataset.widget;
+      widget = (this[name] instanceof Widget) && this[name] || this.namespace.createWidgetByElement(elem);
+      if (!widget) {
+        console.warn("" + elem.tagName + " has name " + name + " but no widget nor no namespace present for it.");
+        return;
+      }
+      widget.replace(elem);
+      if (this[name] === widget) {
+        _ref = elem.attributes;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          attr = _ref[_i];
+          widget.node.setAttribute(attr.name, attr.value);
+        }
+      }
+      if ((name != null) && (this[name] == null)) {
+        this[name] = widget;
+      }
+      if (elem.dataset.id) {
+        return this._bindUI(widget.node, elem.dataset.id);
+      }
     };
 
     Widget.prototype.initUI = function() {
@@ -1805,7 +1812,7 @@
     };
 
     Widget.prototype.appendTo = function(target) {
-      if (Util.isHTMLElement(target)) {
+      if (Util.isHTMLNode(target)) {
         target.appendChild(this.node);
         return true;
       }
@@ -1823,14 +1830,14 @@
         target.remove();
         return;
       }
-      if (Util.isHTMLElement(target) && target.parentElement) {
+      if (Util.isHTMLNode(target) && target.parentElement) {
         target.parentElement.removeChild(target);
       }
     };
 
     Widget.prototype.prependTo = function(target) {
       var first;
-      if (Util.isHTMLElement(target)) {
+      if (Util.isHTMLNode(target)) {
         target = target;
       } else if (target instanceof Leaf.Widget) {
         target = target.node;
@@ -1856,7 +1863,7 @@
       if (target === this || target === this.node) {
         return;
       }
-      if (Util.isHTMLElement(target)) {
+      if (Util.isHTMLNode(target)) {
         target = target;
       } else if (target instanceof Leaf.Widget) {
         target = target.node;
@@ -1868,8 +1875,8 @@
         console.error("can't insert befere root element ");
         return false;
       }
-      if (target.nextElementSibling) {
-        return target.parentElement.insertBefore(this.node, target.nextElementSibling);
+      if (target.nextSibling) {
+        return target.parentElement.insertBefore(this.node, target.nextSibling);
       } else {
         return target.parentElement.appendChild(this.node);
       }
@@ -1879,7 +1886,7 @@
       if (target === this || target === this.node) {
         return;
       }
-      if (Util.isHTMLElement(target)) {
+      if (Util.isHTMLNode(target)) {
         target = target;
       } else if (target instanceof Leaf.Widget) {
         target = target.node;
@@ -1896,13 +1903,29 @@
     };
 
     Widget.prototype.occupy = function(target) {
-      if (Util.isHTMLElement(target)) {
+      if (Util.isHTMLElemen(target)) {
         target.innerHTML = "";
       }
       if (target instanceof Leaf.Widget) {
         target.node.innerHTML = "";
       }
       return this.appendTo(target);
+    };
+
+    Widget.prototype.destroy = function() {
+      var item, _i, _len, _ref, _results;
+      this.emit("beforeDestroy");
+      this.isDestroyed = true;
+      this.removeAllListeners();
+      if (this.node && this.node.querySelectorAll) {
+        _ref = this.node.querySelectorAll("img") || [];
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          item = _ref[_i];
+          _results.push(item.removeAttribute("src"));
+        }
+        return _results;
+      }
     };
 
     return Widget;
@@ -1949,6 +1972,9 @@
       selector = (attrs.map(function(item) {
         return "[data-" + item + "]";
       })).join(",");
+      if (!this.node.querySelectorAll) {
+        return;
+      }
       elems = [].slice.call(this.node.querySelectorAll(selector));
       elems.push(this.node);
       _results = [];
@@ -2190,17 +2216,24 @@
       return -1;
     };
 
-    List.prototype.push = function(item) {
-      item = this.create(item);
-      this.check(item);
-      this[this._length] = item;
-      if (this._length !== 0) {
-        item.after(this[this._length - 1]);
-      } else {
-        item.appendTo(this.node);
+    List.prototype.push = function() {
+      var item, items, _i, _len, _results;
+      items = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      _results = [];
+      for (_i = 0, _len = items.length; _i < _len; _i++) {
+        item = items[_i];
+        item = this.create(item);
+        this.check(item);
+        this[this._length] = item;
+        if (this._length !== 0) {
+          item.after(this[this._length - 1]);
+        } else {
+          item.appendTo(this.node);
+        }
+        this._length++;
+        _results.push(this._attach(item));
       }
-      this._length++;
-      return this._attach(item);
+      return _results;
     };
 
     List.prototype.pop = function() {
@@ -2258,7 +2291,7 @@
     };
 
     List.prototype.splice = function() {
-      var achor, count, increase, index, item, offset, origin, result, toAdd, toAddFinal, toRemoves, _i, _j, _k, _l, _len, _len1, _len2, _len3, _m, _n, _o, _ref, _ref1, _ref2, _ref3;
+      var count, frag, increase, index, item, offset, origin, result, toAdd, toAddFinal, toRemoves, _i, _j, _k, _l, _len, _len1, _len2, _len3, _m, _n, _o, _ref, _ref1, _ref2, _ref3;
       index = arguments[0], count = arguments[1], toAdd = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
       result = [];
       toRemoves = [];
@@ -2279,40 +2312,39 @@
         }
         return _results;
       }).call(this);
-      if (index === 0) {
-        for (_j = 0, _len = toAddFinal.length; _j < _len; _j++) {
-          item = toAddFinal[_j];
-          this.check(item);
-          item.prependTo(this.node);
-          this._attach(item);
-        }
+      frag = document.createDocumentFragment();
+      for (_j = 0, _len = toAddFinal.length; _j < _len; _j++) {
+        item = toAddFinal[_j];
+        this.check(item);
+        frag.appendChild(item.node);
+      }
+      if (index < this.length && this.length > 0) {
+        this.node.insertBefore(frag, this[index].node);
       } else {
-        achor = this[index - 1];
-        for (_k = 0, _len1 = toAddFinal.length; _k < _len1; _k++) {
-          item = toAddFinal[_k];
-          this.check(item);
-          item.after(achor);
-          this._attach(item);
-        }
+        this.node.appendChild(frag);
       }
       increase = toAddFinal.length - count;
       if (increase < 0) {
-        for (origin = _l = _ref = index + count, _ref1 = this._length; _ref <= _ref1 ? _l < _ref1 : _l > _ref1; origin = _ref <= _ref1 ? ++_l : --_l) {
+        for (origin = _k = _ref = index + count, _ref1 = this._length; _ref <= _ref1 ? _k < _ref1 : _k > _ref1; origin = _ref <= _ref1 ? ++_k : --_k) {
           this[origin + increase] = this[origin];
         }
       } else if (increase > 0) {
-        for (origin = _m = _ref2 = this._length - 1, _ref3 = index + count - 1; _ref2 <= _ref3 ? _m < _ref3 : _m > _ref3; origin = _ref2 <= _ref3 ? ++_m : --_m) {
+        for (origin = _l = _ref2 = this._length - 1, _ref3 = index + count - 1; _ref2 <= _ref3 ? _l < _ref3 : _l > _ref3; origin = _ref2 <= _ref3 ? ++_l : --_l) {
           this[origin + increase] = this[origin];
         }
       }
-      for (offset = _n = 0, _len2 = toAddFinal.length; _n < _len2; offset = ++_n) {
+      for (offset = _m = 0, _len1 = toAddFinal.length; _m < _len1; offset = ++_m) {
         item = toAddFinal[offset];
         this[index + offset] = item;
       }
       this._length += increase;
-      for (_o = 0, _len3 = toRemoves.length; _o < _len3; _o++) {
-        item = toRemoves[_o];
+      for (_n = 0, _len2 = toRemoves.length; _n < _len2; _n++) {
+        item = toRemoves[_n];
         this._detach(item);
+      }
+      for (_o = 0, _len3 = toAddFinal.length; _o < _len3; _o++) {
+        item = toAddFinal[_o];
+        this._attach(item);
       }
       return result;
     };
@@ -2355,7 +2387,7 @@
       item.parentList = null;
       node = item.node;
       if (node && node.parentElement === this.node) {
-        item.remove();
+        this.node.removeChild(node);
       }
       item.stopListenBy(this);
       this.emit("child/remove", item);

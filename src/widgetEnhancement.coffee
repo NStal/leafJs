@@ -17,6 +17,8 @@ class Widget extends Widget
     initViewModel:()->
         attrs = Widget.attrs
         selector = (attrs.map (item)->"[data-#{item}]").join(",")
+        if not @node.querySelectorAll
+            return
         elems = [].slice.call @node.querySelectorAll selector
         elems.push @node
         for elem in elems
@@ -122,16 +124,17 @@ class List extends Widget
             if item is child
                 return index
         return -1
-    push:(item)->
-        item = @create(item)
-        @check item
-        @[@_length]=item
-        if @_length isnt 0
-            item.after @[@_length-1]
-        else
-            item.appendTo @node
-        @_length++
-        @_attach(item)
+    push:(items...)->
+        for item in items
+            item = @create(item)
+            @check item
+            @[@_length]=item
+            if @_length isnt 0
+                item.after @[@_length-1]
+            else
+                item.appendTo @node
+            @_length++
+            @_attach(item)
     pop:()->
         if @_length is 0
             return null
@@ -180,18 +183,15 @@ class List extends Widget
             result.push item
         # make DOM match result
         toAddFinal = (@create item for item in toAdd)
-        if index is 0
-            for item in toAddFinal
-                @check item
-                item.prependTo @node
-                @_attach(item)
+        frag = document.createDocumentFragment()
+        for item in toAddFinal
+            @check item
+            frag.appendChild item.node
+        if index < @length and @length > 0
+            @node.insertBefore frag,@[index].node
         else
-            achor = @[index-1]
-            for item in toAddFinal
-                @check item
-                item.after achor
-                @_attach item
-
+            # length is 0(<=0) or index > @length
+            @node.appendChild frag
         # now make list match DOM
         # I make the hole left by remove "count" items
         # match the toAdd.length by shifting them one by one
@@ -212,6 +212,8 @@ class List extends Widget
         @_length += increase
         for item in toRemoves
             @_detach item
+        for item in toAddFinal
+            @_attach item
         return result
     slice:(from,to)->
         return @toArray().slice(from,to)
@@ -247,7 +249,7 @@ class List extends Widget
         # One may overwrite the item::remove method
         # to change the DOM behavior other than instant removeChild
         if node and node.parentElement is @node
-            item.remove()
+            @node.removeChild node
         item.stopListenBy this
         @emit "child/remove",item
         @emit "child/change"

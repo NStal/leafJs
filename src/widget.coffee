@@ -61,6 +61,9 @@ class Widget extends Leaf.EventEmitter
             oldNode.parentElement.insertBefore @node,oldNode
             oldNode.parentElement.removeChild oldNode
         # init UI will listen all predined events on target
+
+        if @node.nodeType is @node.TEXT_NODE
+            return
         @initSubTemplate()
         @initUI()
         @initSubWidgets()
@@ -115,23 +118,25 @@ class Widget extends Leaf.EventEmitter
         # so we buffered it
         elems = [].slice.call(elems,0)
         for elem in elems
-            name = elem.dataset.widget
-            widget = (@[name] instanceof Widget) and @[name] or @namespace.createWidgetByElement(elem)
-            if not widget
-                console.warn "#{elem.tagName} has name #{name} but no widget nor no namespace present for it."
-                continue
-            # replace is safe even elem is widget.node
-            widget.replace elem
-            # widget is get from preset instance member
-            # namespace will set attr of elem ot it's node
-            # so we should manually do it here.
-            if @[name] is widget
-                for attr in elem.attributes
-                    widget.node.setAttribute(attr.name,attr.value)
-            if name? and not @[name]?
-                @[name] = widget
-            if elem.dataset.id
-                @_bindUI(widget.node,elem.dataset.id)
+            @initSubWidget(elem)
+    initSubWidget:(elem)->
+        name = elem.dataset.widget
+        widget = (@[name] instanceof Widget) and @[name] or @namespace.createWidgetByElement(elem)
+        if not widget
+            console.warn "#{elem.tagName} has name #{name} but no widget nor no namespace present for it."
+            return
+        # replace is safe even elem is widget.node
+        widget.replace elem
+        # widget is get from preset instance member
+        # namespace will set attr of elem ot it's node
+        # so we should manually do it here.
+        if @[name] is widget
+            for attr in elem.attributes
+                widget.node.setAttribute(attr.name,attr.value)
+        if name? and not @[name]?
+            @[name] = widget
+        if elem.dataset.id
+            @_bindUI(widget.node,elem.dataset.id)
 
     initUI:()->
         node = @node
@@ -225,7 +230,7 @@ class Widget extends Leaf.EventEmitter
                     node["on#{event}"] = (e)=>
                         @_delegateTo "id",name,e
     appendTo:(target)->
-        if Util.isHTMLElement(target)
+        if Util.isHTMLNode(target)
             target.appendChild(@node)
             return true
         if target instanceof Leaf.Widget
@@ -237,12 +242,12 @@ class Widget extends Leaf.EventEmitter
         if target instanceof Widget
             target.remove()
             return
-        if Util.isHTMLElement(target) and target.parentElement
+        if Util.isHTMLNode(target) and target.parentElement
             target.parentElement.removeChild target
             return
 
     prependTo:(target)->
-        if Util.isHTMLElement(target)
+        if Util.isHTMLNode(target)
             target = target
         else if target instanceof Leaf.Widget
             target = target.node
@@ -260,7 +265,7 @@ class Widget extends Leaf.EventEmitter
     after:(target)->
         if target is this or target is @node
             return
-        if Util.isHTMLElement(target)
+        if Util.isHTMLNode(target)
             target = target
         else if target instanceof Leaf.Widget
             target = target.node
@@ -270,14 +275,14 @@ class Widget extends Leaf.EventEmitter
         if not target or not target.parentElement
             console.error "can't insert befere root element "
             return false
-        if target.nextElementSibling
-            target.parentElement.insertBefore @node,target.nextElementSibling
+        if target.nextSibling
+            target.parentElement.insertBefore @node,target.nextSibling
         else
             target.parentElement.appendChild @node
     before:(target)->
         if target is this or target is @node
             return
-        if Util.isHTMLElement(target)
+        if Util.isHTMLNode(target)
             target = target
         else if target instanceof Leaf.Widget
             target = target.node
@@ -290,11 +295,22 @@ class Widget extends Leaf.EventEmitter
         target.parentElement.insertBefore(@node,target)
         return true
     occupy:(target)->
-        if Util.isHTMLElement(target)
+        if Util.isHTMLElemen(target)
             target.innerHTML = ""
         if target instanceof Leaf.Widget
             target.node.innerHTML = ""
         @appendTo(target)
+    destroy:()->
+        # destroy are mainly for release DOM resource
+        # mostly the image
+        @emit "beforeDestroy"
+        @isDestroyed = true
+        @removeAllListeners()
+        # remove image src
+        if @node and @node.querySelectorAll
+            for item in @node.querySelectorAll("img") or []
+                item.removeAttribute("src")
+
 #Leaf.setGlobalNamespace = (ns)->
 #    Widget.namespace = ns
 #    Widget.ns = ns
