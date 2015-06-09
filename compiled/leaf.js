@@ -978,6 +978,28 @@
 
   Key.tab = 9;
 
+  Key.home = 36;
+
+  Key.end = 35;
+
+  Key.quote = 222;
+
+  Key.openBracket = 219;
+
+  Key.closeBracket = 221;
+
+  Key.backSlash = 220;
+
+  Key.slash = 191;
+
+  Key.comma = 188;
+
+  Key.period = 190;
+
+  Key.dash = 189;
+
+  Key.graveAccent = 192;
+
   Mouse = {};
 
   Mouse.left = 0;
