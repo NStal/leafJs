@@ -452,6 +452,7 @@
 
     function States() {
       this.state = "void";
+      this._sole = 1;
       this.lastException = null;
       this.states = {};
       this.rescues = [];
@@ -517,7 +518,7 @@
     };
 
     States.prototype.setState = function(state) {
-      var stateHandler;
+      var sole, stateHandler;
       if (!state) {
         throw new Errors.InvalidState("Can't set invalid states " + state);
       }
@@ -527,10 +528,9 @@
       if (this.isDestroyed) {
         return;
       }
+      this._sole += 1;
+      this.stopWaiting();
       this.state = state;
-      if (this._waitingGiveName) {
-        throw new Errors.InvalidState("Can't change to state " + state + " while waiting for " + this._waitingGiveName);
-      }
       if (this._isDebugging && this._debugStateHandler) {
         this._debugStateHandler();
       }
@@ -538,7 +538,12 @@
       this.emit("state/" + state);
       stateHandler = "at" + state[0].toUpperCase() + state.substring(1);
       if (this[stateHandler]) {
-        return this[stateHandler](this._sole);
+        sole = this._sole;
+        return this[stateHandler]((function(_this) {
+          return function() {
+            return sole !== _this._sole;
+          };
+        })(this));
       }
     };
 
@@ -666,11 +671,14 @@
     };
 
     States.prototype.stale = function(sole) {
+      if (typeof sole === "function") {
+        return sole();
+      }
       return this._sole !== sole;
     };
 
     States.prototype.respawn = function() {
-      this._sole = this._sole || 0;
+      this._sole = this._sole || 1;
       this._sole += 1;
       this._waitingGiveName = null;
       this._waitingGiveHandler = null;
@@ -1669,7 +1677,13 @@
     };
 
     Widget.prototype.initSubWidget = function(elem) {
-      var attr, name, widget, _i, _len, _ref;
+      var attr, item, name, widget, _i, _j, _len, _len1, _ref, _ref1;
+      if (!elem) {
+        return;
+      }
+      if (elem.dataset == null) {
+        elem.dataset = {};
+      }
       name = elem.dataset.widget;
       widget = (this[name] instanceof Widget) && this[name] || this.namespace.createWidgetByElement(elem);
       if (!widget) {
@@ -1681,7 +1695,15 @@
         _ref = elem.attributes;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           attr = _ref[_i];
-          widget.node.setAttribute(attr.name, attr.value);
+          if (attr.name === "class") {
+            _ref1 = elem.classList;
+            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+              item = _ref1[_j];
+              widget.node.classList.add(item);
+            }
+          } else {
+            widget.node.setAttribute(attr.name, attr.value);
+          }
         }
       }
       if ((name != null) && (this[name] == null)) {
@@ -1751,6 +1773,12 @@
                 return e.preventDefault();
               };
               source = e.target || e.srcElement;
+              if (!source) {
+                return;
+              }
+              if (source.dataset == null) {
+                source.dataset = {};
+              }
               _results1 = [];
               while (source && !e.defaultPrevented) {
                 e.currentTarget = source;

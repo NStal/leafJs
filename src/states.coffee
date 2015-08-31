@@ -37,6 +37,7 @@ class States extends EventEmitter
     @Errors = Errors
     constructor:()->
         @state = "void"
+        @_sole = 1
         @lastException = null
         @states = {}
         @rescues = []
@@ -78,16 +79,20 @@ class States extends EventEmitter
             return
         if @isDestroyed
             return
+        @_sole += 1
+        @stopWaiting()
         @state = state
-        if @_waitingGiveName
-            throw new Errors.InvalidState "Can't change to state #{state} while waiting for #{@_waitingGiveName}"
+#        if @_waitingGiveName
+#            throw new Errors.InvalidState "Can't change to state #{state} while waiting for #{@_waitingGiveName}"
         if @_isDebugging and @_debugStateHandler
             @_debugStateHandler()
         @emit "state",state
         @emit "state/#{state}"
         stateHandler = "at"+state[0].toUpperCase()+state.substring(1)
         if this[stateHandler]
-            this[stateHandler](@_sole)
+            sole = @_sole
+            this[stateHandler] ()=>
+                sole isnt @_sole
     error:(error)->
         @panicError = error
         @panicState = @state
@@ -163,9 +168,11 @@ class States extends EventEmitter
     checkSole:(sole)->
         return @_sole is sole
     stale:(sole)->
+        if typeof sole is "function"
+            return sole()
         return @_sole isnt sole
     respawn:()->
-        @_sole = @_sole or 0
+        @_sole = @_sole or 1
         @_sole += 1
         @_waitingGiveName = null
         @_waitingGiveHandler = null

@@ -120,6 +120,9 @@ class Widget extends Leaf.EventEmitter
         for elem in elems
             @initSubWidget(elem)
     initSubWidget:(elem)->
+        if not elem
+            return
+        elem.dataset ?= {}
         name = elem.dataset.widget
         widget = (@[name] instanceof Widget) and @[name] or @namespace.createWidgetByElement(elem)
         if not widget
@@ -132,7 +135,11 @@ class Widget extends Leaf.EventEmitter
         # so we should manually do it here.
         if @[name] is widget
             for attr in elem.attributes
-                widget.node.setAttribute(attr.name,attr.value)
+                if attr.name is "class"
+                    for item in elem.classList
+                        widget.node.classList.add item
+                else
+                    widget.node.setAttribute(attr.name,attr.value)
         if name? and not @[name]?
             @[name] = widget
         if elem.dataset.id
@@ -179,6 +186,9 @@ class Widget extends Leaf.EventEmitter
                         e.stopImmediatePropagation()
                         e.preventDefault()
                     source = e.target or e.srcElement
+                    if not source
+                        return
+                    source.dataset ?= {}
                     while source and not e.defaultPrevented
                         e.currentTarget = source
                         if source is @node
