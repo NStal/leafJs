@@ -1,9 +1,9 @@
+Errors = Leaf.ErrorDoc.create()
+    .define("NetworkError")
+    .define("ServerError")
+    .define("InvalidResponseType")
+    .generate()
 class RestApiFactory
-    @Error = {
-        NetworkError:"NetworkError"
-        ,ServerError:"ServerError"
-        ,InvalidDataType:"InvalidDataType"
-    }
     constructor:()->
         @stateField = "state"
         @dataField = "data"
@@ -51,7 +51,7 @@ class RestApiFactory
             callback null,data.data
             return
         else
-            callback data.error or RestApiFactory.Error.ServerError
+            callback data.error or new Errors.ServerError("server return state false but not return any error information",{raw:data})
             return
     request:(option,callback)->
         method = option.method || "GET";
@@ -69,7 +69,7 @@ class RestApiFactory
             (option.parser or @parse)(err,response,_callback)
         xhr.onreadystatechange = ()=>
             if xhr.readyState is 0 and not done
-                callback RestApiFactory.Error.NetworkError,null
+                callback new Errors.NetworkError(),null
                 return
             if xhr.readyState is 4
                 done = true
@@ -77,11 +77,11 @@ class RestApiFactory
                     try
                         data = JSON.parse(xhr.responseText)
                     catch e
-                        callback RestApiFactory.Error.InvalidDataType,xhr.responseText
+                        callback new Errors.NetworkError "Broken response",{via:new Errors.InvalidResponseType("fail to parse server data",{raw:xhr.responseText})},xhr.responseText
                         return
                     callback null,data
                 else
-                    callback RestApiFactory.Error.InvalidDataType
+                    callback new Errors.NetworkError "Empty response",{via:Errors.InvalidResponseType("Server return empty response")}
         if method.toLowerCase() isnt "get"
             xhr.send(@_encodeDataPayload(option.data))
         else

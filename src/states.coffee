@@ -79,6 +79,9 @@ class States extends EventEmitter
             return
         if @isDestroyed
             return
+        if @data.feeds
+            for prop,item of @data.feeds
+                item.feedListener = null
         @_sole += 1
         @stopWaiting()
         @state = state
@@ -146,6 +149,27 @@ class States extends EventEmitter
         if name is @_waitingGiveName
             return true
         return false
+    feed:(name,item)->
+        @data.feeds ?= {}
+        @data.feeds[name] ?= []
+        @data.feeds[name].push(item)
+        if listener = @data.feeds[name].feedListener
+
+            @data.feeds[name].feedListener = null
+            listener()
+    consume:(name)->
+        if @data.feeds?[name]?
+            return @data.feeds[name].shift()
+        else
+            return null
+    consumeWhenAvailable:(name,callback)->
+        @data.feeds ?= {}
+        @data.feeds[name] ?= []
+        if @data.feeds[name].length > 0
+            callback @consume(name)
+        else
+            @data.feeds[name].feedListener = ()=>
+                callback @consume(name)
     waitFor:(name,handler)->
         if @_waitingGiveName
             throw new Error "already waiting for #{@_waitingGiveName} and can't wait for #{name} now"

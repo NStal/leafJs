@@ -51,11 +51,25 @@ class Widget extends Widget
                     @_ViewModel.declare who
                 oldClass = ""
                 @_ViewModel.listenBy elem,"change/#{who}",(value)=>
+                    # If className privded
+                    # truethy value make value to be classname
+                    # falsy value make value to be ""
+                    removeClass = false
                     if className
                         decision = value
                         value = className
                         if not decision
-                            value = ""
+                            removeClass = true
+                    console.error className,value,'QAQ',typeof value
+                    if not className and typeof value is "boolean"
+                        decision = value
+                        value = who
+                        if not decision
+                            removeClass = true
+                        console.error decision,value,removeClass
+                    if removeClass
+                        elem.classList.remove value
+                        return
                     if value and elem.classList.contains value
                         if oldClass and elem.classList.contains oldClass
                             elem.classList.remove oldClass

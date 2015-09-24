@@ -178,6 +178,20 @@
       return this;
     };
 
+    EventEmitter.prototype.listenByOnce = function(who, event, callback, context) {
+      var handler, handlers;
+      this._events[event] = this._events[event] || [];
+      handlers = this._events[event];
+      handler = {
+        callback: callback,
+        context: context || who,
+        owner: who,
+        once: true
+      };
+      handlers.push(handler);
+      return this;
+    };
+
     EventEmitter.prototype.stopListenBy = function(who) {
       var event, handler, handlers, index, _i, _len;
       for (event in this._events) {
@@ -518,7 +532,7 @@
     };
 
     States.prototype.setState = function(state) {
-      var sole, stateHandler;
+      var item, prop, sole, stateHandler, _ref;
       if (!state) {
         throw new Errors.InvalidState("Can't set invalid states " + state);
       }
@@ -527,6 +541,13 @@
       }
       if (this.isDestroyed) {
         return;
+      }
+      if (this.data.feeds) {
+        _ref = this.data.feeds;
+        for (prop in _ref) {
+          item = _ref[prop];
+          item.feedListener = null;
+        }
       }
       this._sole += 1;
       this.stopWaiting();
@@ -632,6 +653,49 @@
         return true;
       }
       return false;
+    };
+
+    States.prototype.feed = function(name, item) {
+      var listener, _base, _base1;
+      if ((_base = this.data).feeds == null) {
+        _base.feeds = {};
+      }
+      if ((_base1 = this.data.feeds)[name] == null) {
+        _base1[name] = [];
+      }
+      this.data.feeds[name].push(item);
+      if (listener = this.data.feeds[name].feedListener) {
+        this.data.feeds[name].feedListener = null;
+        return listener();
+      }
+    };
+
+    States.prototype.consume = function(name) {
+      var _ref;
+      if (((_ref = this.data.feeds) != null ? _ref[name] : void 0) != null) {
+        return this.data.feeds[name].shift();
+      } else {
+        return null;
+      }
+    };
+
+    States.prototype.consumeWhenAvailable = function(name, callback) {
+      var _base, _base1;
+      if ((_base = this.data).feeds == null) {
+        _base.feeds = {};
+      }
+      if ((_base1 = this.data.feeds)[name] == null) {
+        _base1[name] = [];
+      }
+      if (this.data.feeds[name].length > 0) {
+        return callback(this.consume(name));
+      } else {
+        return this.data.feeds[name].feedListener = (function(_this) {
+          return function() {
+            return callback(_this.consume(name));
+          };
+        })(this);
+      }
     };
 
     States.prototype.waitFor = function(name, handler) {
@@ -1642,7 +1706,7 @@
         this.node.__defineGetter__(remoteName, (function(_this) {
           return function() {
             if (_this[getterName]) {
-              return _this[getterName](value, "property");
+              return _this[getterName]("property");
             }
             return _this[name];
           };
@@ -2099,13 +2163,27 @@
             }
             oldClass = "";
             return _this._ViewModel.listenBy(elem, "change/" + who, function(value) {
-              var decision;
+              var decision, removeClass;
+              removeClass = false;
               if (className) {
                 decision = value;
                 value = className;
                 if (!decision) {
-                  value = "";
+                  removeClass = true;
                 }
+              }
+              console.error(className, value, 'QAQ', typeof value);
+              if (!className && typeof value === "boolean") {
+                decision = value;
+                value = who;
+                if (!decision) {
+                  removeClass = true;
+                }
+                console.error(decision, value, removeClass);
+              }
+              if (removeClass) {
+                elem.classList.remove(value);
+                return;
               }
               if (value && elem.classList.contains(value)) {
                 if (oldClass && elem.classList.contains(oldClass)) {
@@ -2711,13 +2789,9 @@
 
   exports.TemplateManager = TemplateManager;
 
-  RestApiFactory = (function() {
-    RestApiFactory.Error = {
-      NetworkError: "NetworkError",
-      ServerError: "ServerError",
-      InvalidDataType: "InvalidDataType"
-    };
+  Errors = Leaf.ErrorDoc.create().define("NetworkError").define("ServerError").define("InvalidResponseType").generate();
 
+  RestApiFactory = (function() {
     function RestApiFactory() {
       this.stateField = "state";
       this.dataField = "data";
@@ -2805,7 +2879,9 @@
       if (data.state) {
         callback(null, data.data);
       } else {
-        callback(data.error || RestApiFactory.Error.ServerError);
+        callback(data.error || new Errors.ServerError("server return state false but not return any error information", {
+          raw: data
+        }));
       }
     };
 
@@ -2831,7 +2907,7 @@
         return function() {
           var data, e;
           if (xhr.readyState === 0 && !done) {
-            callback(RestApiFactory.Error.NetworkError, null);
+            callback(new Errors.NetworkError(), null);
             return;
           }
           if (xhr.readyState === 4) {
@@ -2841,12 +2917,18 @@
                 data = JSON.parse(xhr.responseText);
               } catch (_error) {
                 e = _error;
-                callback(RestApiFactory.Error.InvalidDataType, xhr.responseText);
+                callback(new Errors.NetworkError("Broken response", {
+                  via: new Errors.InvalidResponseType("fail to parse server data", {
+                    raw: xhr.responseText
+                  })
+                }, xhr.responseText));
                 return;
               }
               return callback(null, data);
             } else {
-              return callback(RestApiFactory.Error.InvalidDataType);
+              return callback(new Errors.NetworkError("Empty response", {
+                via: Errors.InvalidResponseType("Server return empty response")
+              }));
             }
           }
         };

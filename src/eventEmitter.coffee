@@ -94,6 +94,16 @@ class EventEmitter
             owner:who
         handlers.push handler
         return this
+    listenByOnce:(who,event,callback,context)->
+        @_events[event] = @_events[event] or []
+        handlers = @_events[event]
+        handler =
+            callback:callback
+            context:context or who
+            owner:who
+            once:true
+        handlers.push handler
+        return this
     stopListenBy:(who)->
         for event of @_events
             handlers = @_events[event]

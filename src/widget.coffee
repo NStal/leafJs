@@ -98,7 +98,7 @@ class Widget extends Leaf.EventEmitter
             setterName = "onSet#{capName}"
             @node.__defineGetter__ remoteName,()=>
                 if @[getterName]
-                    return @[getterName](value,"property")
+                    return @[getterName]("property")
                 return @[name]
             @node.__defineSetter__ remoteName,(value)=>
                 if @[setterName]
