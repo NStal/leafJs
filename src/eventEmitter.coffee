@@ -11,14 +11,20 @@ class EventEmitter
     constructor: ()->
         @_events ?= {}
         @_bubbles ?= []
+        @maxListener = 16
+    warnLeak:()->
+        console.error "Over MaxListener #{@maxListener}, may be a potential memory leak."
         #alias
 #        @trigger ?= @emit
+
     addListener:(event,callback,context)->
         handlers = @_events[event] = @_events[event] || []
         handler =
             callback:callback
             context:context
         handlers.push handler
+        if handlers.length > @maxListener
+            @warnLeak()
         return this
     on:()->
         @addListener.apply(this,arguments)
@@ -61,6 +67,8 @@ class EventEmitter
             context:context
             once:true
         handlers.push handler
+        if handlers.length > @maxListener
+            @warnLeak()
         return this
     bubble:(emitter,event,processor)->
         listener = (args...)=>
@@ -93,6 +101,8 @@ class EventEmitter
             context:context or who
             owner:who
         handlers.push handler
+        if handlers.length > @maxListener
+            @warnLeak()
         return this
     listenByOnce:(who,event,callback,context)->
         @_events[event] = @_events[event] or []
@@ -103,6 +113,8 @@ class EventEmitter
             owner:who
             once:true
         handlers.push handler
+        if handlers.length > @maxListener
+            @warnLeak()
         return this
     stopListenBy:(who)->
         for event of @_events

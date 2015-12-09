@@ -42,6 +42,7 @@ class States extends EventEmitter
         @states = {}
         @rescues = []
         @data = {}
+        @forceAsync ?= false
 #        @_listenBys = []
         if @_isDebugging
             @debug()
@@ -72,7 +73,30 @@ class States extends EventEmitter
         handlerName = "at"+state[0].toUpperCase()+state.substring(1)
         this[handlerName] = callback
         return this
+    _nextTick:(exec)->
+        if typeof setImmediate isnt "undefined"
+            fn = setImmediate
+        else
+            fn = (exec)=>
+                timer = setTimeout ()=>
+                    exec()
+                ,4
+                return timer
+        return fn(exec)
+    _clearTick:(timer)->
+        if typeof setImmediate isnt "undefined"
+            fn = clearImmediate
+        else
+            fn = clearTimeout
     setState:(state)->
+        @_clearTick @_stateTimer
+        if @forceAsync
+            @_stateTimer = @_nextTick ()=>
+                @_setState state
+        else
+            @_setState state
+    _setState:(state)->
+        @_clearTick @_stateTimer
         if not state
             throw new Errors.InvalidState "Can't set invalid states #{state}"
         if @state is "panic" and state isnt "void"
@@ -84,6 +108,7 @@ class States extends EventEmitter
                 item.feedListener = null
         @_sole += 1
         @stopWaiting()
+        @previousState = @state
         @state = state
 #        if @_waitingGiveName
 #            throw new Errors.InvalidState "Can't change to state #{state} while waiting for #{@_waitingGiveName}"
@@ -154,7 +179,6 @@ class States extends EventEmitter
         @data.feeds[name] ?= []
         @data.feeds[name].push(item)
         if listener = @data.feeds[name].feedListener
-
             @data.feeds[name].feedListener = null
             listener()
     consume:(name)->
@@ -203,6 +227,7 @@ class States extends EventEmitter
         @panicError = null
         @panicState = null
         @setState "void"
+        @_clearTick @_stateTimer
         @clear()
 #    listenBy:(who,event,callback)->
 #        owner = null

@@ -2,13 +2,16 @@ Errors = Leaf.ErrorDoc.create()
     .define("NetworkError")
     .define("ServerError")
     .define("InvalidResponseType")
+    .define("Timeout")
     .generate()
 class RestApiFactory
+    @Errors = Errors
     constructor:()->
         @stateField = "state"
         @dataField = "data"
         @errorField = "error"
         @defaultMethod = "GET"
+        @defaultTimeout = 0
     prefix:(prefix)->
         @_prefix = prefix or ""
     suffix:(suffix)->
@@ -23,7 +26,7 @@ class RestApiFactory
         reg = /:[a-z_][a-z0-9_]*/ig
         # remove : of param name
         routeParams = (_url.match(reg) or []).map (item)->item.substring(1)
-        return (data,callback = ()->true )=>
+        fn = (data,callback = (()->true),config = {})=>
             if option.data
                 for prop of option.data
                     if typeof data[prop] is "undefined"
@@ -38,6 +41,7 @@ class RestApiFactory
                 ,method:method
                 ,data:data
                 ,option:option.option
+                ,timeout:option.timeout or config.timeout or @defaultTimeout or 0
             }
             xhr = @request reqOption,callback
             return xhr
@@ -53,7 +57,7 @@ class RestApiFactory
         else
             callback data.error or new Errors.ServerError("server return state false but not return any error information",{raw:data})
             return
-    request:(option,callback)->
+    request:(option = {},callback)->
         method = option.method || "GET";
         if method.toLowerCase() is "get"
             url = option.url + "?" + @_encodeDataPayload(option.data)
@@ -65,8 +69,18 @@ class RestApiFactory
         #xhr.responseType = option.dataType or "json"
         done = false
         _callback = callback
+        timer = null
         callback = (err,response)=>
+            clearTimeout timer
+            # disable multiple callback
+            callback = ->
             (option.parser or @parse)(err,response,_callback)
+        if option.timeout
+            timer = setTimeout ()->
+                callback = ->
+                _callback(new Errors.Timeout("Request timeout after #{option.timeout} sec"),{timeout:option.timeout})
+                xhr.abort()
+            ,option.timeout * 1000
         xhr.onreadystatechange = ()=>
             if xhr.readyState is 0 and not done
                 callback new Errors.NetworkError(),null

@@ -65,6 +65,7 @@ class Collection extends EventEmitter
         if old
             old.sets model.data
             return old
+        #console.error "add new",@models.length
         @models.push model
         @_attachModel model
         @emit "add",model
@@ -86,7 +87,7 @@ class Collection extends EventEmitter
         model.listenBy this,"change",(key,value)=>
             if @id and key is @id
                 throw new Error "shouldn't change id #{key} for model inside a the collection"
-            @emit "change/model",model
+            @emit "change/model",model,key,value
             @emit "change/model/#{key}",model,key,value
     _detachModel:(model)->
         model.stopListenBy this

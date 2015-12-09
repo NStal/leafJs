@@ -11,7 +11,7 @@ Util.isMobile = ()->
     if navigator and navigator.userAgent
         return (navigator.userAgent.match(/Android/i) or navigator.userAgent.match(/webOS/i) or navigator.userAgent.match(/iPhone/i) or navigator.userAgent.match(/iPad/i) or navigator.userAgent.match(/iPod/i) or navigator.userAgent.match(/BlackBerry/i) or navigator.userAgent.match(/Windows Phone/i)) and true
     else
-        return false 
+        return false
 Util.getBrowserInfo = ()->
     N= navigator.appName
     ua= navigator.userAgent
@@ -28,11 +28,11 @@ Util.slugToCamel = (string)->
         return match.substring(1).toUpperCase()
 Util.camelToSlug = (string,keepCase = false)->
     result = string.replace /[a-z][A-Z]/g,(match)->
-        match[0]+"-"+match[1].toLowerCase() 
+        match[0]+"-"+match[1].toLowerCase()
     if not keepCase
         result = result.toLowerCase()
     return result
-Util.clone = (x,stack = [])-> 
+Util.clone = (x,stack = [])->
     if x is null or x is undefined
         return x;
     if typeof x.clone is "function"
@@ -44,7 +44,7 @@ Util.clone = (x,stack = [])->
         stack.push x
         for item in x
             r.push Util.clone(item,stack)
-        return r; 
+        return r;
     if typeof x is "object"
         obj = {}
         stack.push x
@@ -58,7 +58,8 @@ Util.clone = (x,stack = [])->
 Util.compare = (x,y)->
     if x is y
         return true
-    
+    if (x and not y) or (y and not x)
+        return false
     if x instanceof Array and y instanceof Array
         if x.length isnt y.length
             return false
@@ -66,22 +67,28 @@ Util.compare = (x,y)->
             if not Util.compare item,y[index]
                 return false
         return true
-    for p of y 
-        if typeof x[p] is 'undefined' then return false; 
-    for p of y 
-        if y[p] 
-            switch typeof y[p] 
+    #for p of y
+    #    if typeof x[p] is 'undefined' then return false;
+    for p of y
+        if not y.hasOwnProperty(p)
+            continue
+        if y[p]
+            switch typeof y[p]
                 when 'object'
                     if not Util.compare(y[p],x[p]) then return false
-                when 'function' 
-                    if typeof x[p] is 'undefined' or (p isnt 'equals' and y[p].toString() isnt x[p].toString()) 
+                when 'function'
+                    if typeof x[p] is 'undefined' or (p isnt 'equals' and y[p].toString() isnt x[p].toString())
                         return false;
                 else
-                    if y[p] isnt x[p] then return false
+                    if y[p] isnt x[p]
+                        return false
         else if x[p]
-            return false; 
-    for p in x
-        if typeof(y[p]) is 'undefined' then return false
+            return false;
+    for p of x
+        if not x.hasOwnProperty(p)
+            continue
+        if typeof(y[p]) is 'undefined' and y[p] isnt x[p]
+            return false
     return true
 
 Leaf.Util = Util

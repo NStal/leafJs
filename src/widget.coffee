@@ -125,8 +125,10 @@ class Widget extends Leaf.EventEmitter
         elem.dataset ?= {}
         name = elem.dataset.widget
         widget = (@[name] instanceof Widget) and @[name] or @namespace.createWidgetByElement(elem)
-        if not widget
-            console.warn "#{elem.tagName} has name #{name} but no widget nor no namespace present for it."
+        # hasEmbedWidget means some widget placeholder will be given to sub widget.
+        # User can manually set this property to prevent error message
+        if not widget and not @hasEmbedWidget
+            console.warn "#{elem.tagName} has name #{name} but no widget nor namespace present for it."
             return
         # replace is safe even elem is widget.node
         widget.replace elem

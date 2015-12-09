@@ -132,6 +132,7 @@ Key.slash = 191
 Key.comma = 188
 Key.period = 190
 Key.dash = 189
+Key.semiColon = 186
 Key.graveAccent = 192
 
 Mouse = {}
@@ -141,3 +142,5 @@ Mouse.right = 2
 Leaf.KeyEventManager = KeyEventManager
 Leaf.Key = Key
 Leaf.Mouse = Mouse
+for index in [1..12]
+    Key["f"+index] = 111 + index

@@ -60,15 +60,16 @@ class Widget extends Widget
                         value = className
                         if not decision
                             removeClass = true
-                    console.error className,value,'QAQ',typeof value
                     if not className and typeof value is "boolean"
                         decision = value
                         value = who
                         if not decision
                             removeClass = true
-                        console.error decision,value,removeClass
                     if removeClass
                         elem.classList.remove value
+                        oldClass = ""
+                        return
+                    if value is oldClass # and not removeClass
                         return
                     if value and elem.classList.contains value
                         if oldClass and elem.classList.contains oldClass
@@ -133,6 +134,11 @@ class List extends Widget
         for child in this
             if child is item
                 throw "already exists"
+    contains:(args...)->
+        for item in args
+            if @indexOf(item) < 0
+                return false
+        return true
     indexOf:(item)->
         for child,index in this
             if item is child
