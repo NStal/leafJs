@@ -1,0 +1,18 @@
+{
+  "name": "leafjs",
+  "version": "0.0.1",
+  "homepage": "https://github.com/NStal/leafJs",
+  "authors": [
+    "NStal <nstalmail@gmail.com>"
+  ],
+  "description": "A frontend prophecy",
+  "main": "compiled/leaf.js",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

@@ -1,4 +1,3 @@
-
 # set/get is generally savior than direct assignment
 # the difference is set/get on undeclares model property will throw error
 # and also set will force an change event even if the value is the as the old one
@@ -6,6 +5,7 @@
 #
 # but in general they are the same, assign them a new value will auto trigger a change event
 # if the value is really changed
+
 class Model extends EventEmitter
     constructor:(raw = {})->
         super()

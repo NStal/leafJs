@@ -1,9 +1,19 @@
 class Widget extends Leaf.EventEmitter
-    constructor:(template)->
+    constructor:(option = null)->
         super()
+        template = null
+        if not option
+            template = null
+        else if typeof option is "string"
+            template = option
+        else if Util.isHTMLNode option
+            template = option
+        else if typeof option is "object"
+            template = option.node or option.template or null
+
         @namespace = @namespace or (@constructor and @constructor.namespace) or new Leaf.Namespace()
-        @template = template or @template or = "<div></div>"
-        @node = null 
+        @template = template or @template or document.createElement "div"
+        @node = null
         @$node = null
         @node$ = null
         @UI = {}
@@ -30,15 +40,14 @@ class Widget extends Leaf.EventEmitter
                 if not @node
                     console.error "template of query #{query} not found"
                     return
-                @node.widget = this
             else
                 tempNode = document.createElement("div");
                 tempNode.innerHTML = template.trim()
                 @node = tempNode.children[0]
+                tempNode.removeChild(@node)
         else if Util.isHTMLNode(template)
             @node = template
-            @node.widget = this
-        
+        @node.widget = this
         # insert tr or td tag into div or something
         # may cause failure to generate elements
         # but we only handle it in latter version
@@ -52,6 +61,9 @@ class Widget extends Leaf.EventEmitter
             oldNode.parentElement.insertBefore @node,oldNode
             oldNode.parentElement.removeChild oldNode
         # init UI will listen all predined events on target
+
+        if @node.nodeType is @node.TEXT_NODE
+            return
         @initSubTemplate()
         @initUI()
         @initSubWidgets()
@@ -65,16 +77,22 @@ class Widget extends Leaf.EventEmitter
         for tmpl in templateNodes
             template = tmpl.innerHTML
             name = tmpl.getAttribute("data-name")
-            if tmpl.parentElement
-                tmpl.parentElement.removeChild(tmpl)
+        # hide template instead of remove it
+        # so it can be captured by child
+            if tmpl
+                tmpl.style.display = "none"
+#            if tmpl.parentElement and @node.contains tmpl
+#                tmpl.parentElement.removeChild(tmpl)
             if name
                 @templates[name] = template
     expose:(name,remoteName)->
         remoteName = remoteName or name
+        # expose method
         if @[name] and typeof @[name] is "function"
             @node.__defineGetter__ remoteName,()=>
                 return @[name].bind(this)
         else
+        # expose property
             capName = Util.capitalize name
             getterName = "onGet#{capName}"
             setterName = "onSet#{capName}"
@@ -84,11 +102,11 @@ class Widget extends Leaf.EventEmitter
                 return @[name]
             @node.__defineSetter__ remoteName,(value)=>
                 if @[setterName]
-                    @[setterName](value,"property") 
+                    @[setterName](value,"property")
                 else
                     @[name] = value
-    initDelegates:()->
-        events = ["blur","click","focus","keydown","keyup","keypress","mousemove","mouseenter","mouseleave","mouseover","mouseout","scroll"]
+#    initDelegates:()->
+#        events = ["blur","click","focus","keydown","keyup","keypress","mousemove","mouseenter","mouseleave","mouseover","mouseout","scroll"]
 
     initSubWidgets:()->
         if @namespace
@@ -100,25 +118,26 @@ class Widget extends Leaf.EventEmitter
         # so we buffered it
         elems = [].slice.call(elems,0)
         for elem in elems
-            name = elem.dataset.widget
-            widget = (@[name] instanceof Widget) and @[name] or @namespace.createWidgetByElement(elem)
-            if not widget
-                console.warn "#{elem.tagName}has name but no widget and no namespace present for it"
-                continue
-            # replace is safe even elem is widget.node
-            widget.replace elem
-            # widget is get from preset instance member
-            # namespace will set attr of elem ot it's node
-            # so we should manually do it here.
-            if @[name] is widget
-                for attr in elem.attributes
-                    widget.node.setAttribute(attr.name,attr.value)
-            if name? and not @[name]?
-                @[name] = widget
-            if elem.dataset.id
-#                console.debug "elem.dataset has id",elem.dataset.id
-                @_bindUI(widget.node,elem.dataset.id)
-    
+            @initSubWidget(elem)
+    initSubWidget:(elem)->
+        name = elem.dataset.widget
+        widget = (@[name] instanceof Widget) and @[name] or @namespace.createWidgetByElement(elem)
+        if not widget
+            console.warn "#{elem.tagName} has name #{name} but no widget nor no namespace present for it."
+            return
+        # replace is safe even elem is widget.node
+        widget.replace elem
+        # widget is get from preset instance member
+        # namespace will set attr of elem ot it's node
+        # so we should manually do it here.
+        if @[name] is widget
+            for attr in elem.attributes
+                widget.node.setAttribute(attr.name,attr.value)
+        if name? and not @[name]?
+            @[name] = widget
+        if elem.dataset.id
+            @_bindUI(widget.node,elem.dataset.id)
+
     initUI:()->
         node = @node
         elems = node.querySelectorAll "[data-id]"
@@ -130,10 +149,10 @@ class Widget extends Leaf.EventEmitter
                 continue
             if id = subNode.getAttribute "data-id"
                 @_bindUI(subNode,id)
-                @_delegateUnBubbleEvent(id) 
+                @_delegateUnBubbleEvent(id)
         @_delegateUnBubbleEvent()
         return true
-    _bindUI:(node,id)->        
+    _bindUI:(node,id)->
             @UI[id] = node
             node.widget = this
             node.uiId = id
@@ -145,23 +164,41 @@ class Widget extends Leaf.EventEmitter
         if type is "group"
             fnName += "Groups"
         if @[fnName]
-            @[fnName](event)
-        return
+            return @[fnName](event)
+        return true
     initDelegates:()->
         if @disableDelegates
             return
-        events = ["click","mouseup","mousedown","mousemove","mouseleave","mouseenter","keydown","keyup","keypress"]
+        events = ["click","mouseup","mousedown","mousemove","mouseleave","mouseenter","mouseover","keydown","keyup","keypress"]
         for event in events
             do (event)=>
-                @node["on#{event}"] = (e)=>
+                @node.addEventListener event,(e)=>
+                    # don't use e.stopImmediatePropagation()
+                    # use prevent default
+                    e.capture = ()->
+                        e.stopImmediatePropagation()
+                        e.preventDefault()
                     source = e.target or e.srcElement
-                    if source.widget isnt this
-                        return
-                    if source.uiId
-                        @_delegateTo "id",source.uiId,e
-                    else if source.dataset.group
-                        @_delegateTo "group",source.dataset.group,e
-                
+                    while source and not e.defaultPrevented
+                        e.currentTarget = source
+                        if source is @node
+                            result = @_delegateTo "self","node",e
+                        if source.widget and source.widget isnt this
+                            # likely we by any chance
+                            # run into others dom space
+                            break
+                        else if source.uiId
+                            result = @_delegateTo "id",source.uiId,e
+                        else if source.dataset.group
+                            result = @_delegateTo "group",source.dataset.group,e
+                        if result is false
+                            e.capture()
+                            break
+                        else
+                            if source is @node
+                                break
+                            source = source.parentElement
+
     _delegateUnBubbleEvent:(name)->
         if @disableDelegates
             return
@@ -191,11 +228,11 @@ class Widget extends Leaf.EventEmitter
                 # the behavior should be unpredictable and unwanted
                 do (event)=>
                     node["on#{event}"] = (e)=>
-                        @_delegateTo "id",name,event
+                        @_delegateTo "id",name,e
     appendTo:(target)->
-        if Util.isHTMLElement(target)
+        if Util.isHTMLNode(target)
             target.appendChild(@node)
-            return true 
+            return true
         if target instanceof Leaf.Widget
             target.node.appendChild(@node)
     replace:(target)->
@@ -205,12 +242,12 @@ class Widget extends Leaf.EventEmitter
         if target instanceof Widget
             target.remove()
             return
-        if Util.isHTMLElement(target) and target.parentElement
+        if Util.isHTMLNode(target) and target.parentElement
             target.parentElement.removeChild target
             return
-            
+
     prependTo:(target)->
-        if Util.isHTMLElement(target)
+        if Util.isHTMLNode(target)
             target = target
         else if target instanceof Leaf.Widget
             target = target.node
@@ -228,7 +265,7 @@ class Widget extends Leaf.EventEmitter
     after:(target)->
         if target is this or target is @node
             return
-        if Util.isHTMLElement(target)
+        if Util.isHTMLNode(target)
             target = target
         else if target instanceof Leaf.Widget
             target = target.node
@@ -238,14 +275,14 @@ class Widget extends Leaf.EventEmitter
         if not target or not target.parentElement
             console.error "can't insert befere root element "
             return false
-        if target.nextElementSibling
-            target.parentElement.insertBefore @node,target.nextElementSibling
+        if target.nextSibling
+            target.parentElement.insertBefore @node,target.nextSibling
         else
             target.parentElement.appendChild @node
     before:(target)->
         if target is this or target is @node
             return
-        if Util.isHTMLElement(target)
+        if Util.isHTMLNode(target)
             target = target
         else if target instanceof Leaf.Widget
             target = target.node
@@ -258,33 +295,23 @@ class Widget extends Leaf.EventEmitter
         target.parentElement.insertBefore(@node,target)
         return true
     occupy:(target)->
-        if Util.isHTMLElement(target)
+        if Util.isHTMLElemen(target)
             target.innerHTML = ""
         if target instanceof Leaf.Widget
             target.node.innerHTML = ""
         @appendTo(target)
-    use:(model)->
-        @_models.push model
-        model.listenBy this,"destroy",()=>
-            @_models = @_models.filter (item)->item isnt model
-        model.retain()
     destroy:()->
-        # prevent recursive
-        if @isDestroy
-            return
-        @isDestroy = true
-        # emit before clean eventemitter
-        @emit "destroy"
-        super()
-        for model in @_models
-            model.release()
-            model.stopListenBy(this)
-        @UI = null
-        @node = null
-        @node$ = null
-        @$node = null
+        # destroy are mainly for release DOM resource
+        # mostly the image
+        @emit "beforeDestroy"
+        @isDestroyed = true
+        @removeAllListeners()
+        # remove image src
+        if @node and @node.querySelectorAll
+            for item in @node.querySelectorAll("img") or []
+                item.removeAttribute("src")
+
 #Leaf.setGlobalNamespace = (ns)->
 #    Widget.namespace = ns
 #    Widget.ns = ns
 #Leaf.setGlobalNamespace(new Namespace())
-

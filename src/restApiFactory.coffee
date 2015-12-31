@@ -17,17 +17,21 @@ class RestApiFactory
         @_prefix
     create:(option = {})->
         method = option.method or @defaultMethod or "GET"
-        _url = option.url
+        _url = @_prefix + option.url
         if not _url
             throw new Error "API require en URL"
-        reg = /:[a-z][a-z0-9]*/ig
+        reg = /:[a-z_][a-z0-9_]*/ig
         # remove : of param name
         routeParams = (_url.match(reg) or []).map (item)->item.substring(1)
         return (data,callback = ()->true )=>
+            if option.data
+                for prop of option.data
+                    if typeof data[prop] is "undefined"
+                        data[prop] = option.data[prop]
             url = _url
             for prop of data
                 if prop in routeParams
-                    url = url.replace(new RegExp(":"+prop,"g"),encodeURIComponent(data[prop]))
+                    url = url.replace(new RegExp(":"+prop,"g"),@escapeRouteParam(data[prop]))
                     delete data[prop]
             reqOption = {
                 url:url
@@ -37,6 +41,8 @@ class RestApiFactory
             }
             xhr = @request reqOption,callback
             return xhr
+    escapeRouteParam:(data)->
+        return encodeURIComponent data
     parse:(err,data = {},callback = ()-> true)->
         if err
             callback err
@@ -82,10 +88,39 @@ class RestApiFactory
             xhr.send()
         return xhr
     _encodeDataPayload:(data = {})->
-        result = []
-        for prop of data
-            kv = [prop,encodeURIComponent(data[prop])].join("=")
-            result.push kv
-        return result.join("&")
-                    
+        return @querify data
+    querify:(data)->
+        encode = encodeURIComponent
+        isolate = (data)->
+            if typeof data is "string"
+                return [encode data]
+            else if typeof data is "number"
+                return [encode data]
+            else if typeof data instanceof Date
+                return data.toString()
+            else if not data
+                return []
+            result = []
+            if data instanceof Array
+                for item,index in data
+                    result.push [index].concat isolate item
+                return result
+            for prop of data
+                part = isolate data[prop]
+                for item in part
+                    result.push [encode prop].concat item
+            return result
+        results = isolate data
+        querys = []
+        for item in results
+            if item.length < 2
+                continue
+            value = item.pop()
+            base = item.shift()
+            keys = item.map (key)-> "[#{key}]"
+            querys.push base + keys.join("") + "=" + value
+        return querys.join "&"
+
+
+
 exports.RestApiFactory = RestApiFactory
