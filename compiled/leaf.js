@@ -475,9 +475,13 @@
 
   Leaf.ErrorDoc = ErrorDoc;
 
-  EventEmitter = Leaf.EventEmitter;
-
-  Errors = Leaf.ErrorDoc.create().define("AlreadyDestroyed").define("InvalidState").generate();
+  if (typeof Leaf !== "undefined") {
+    EventEmitter = Leaf.EventEmitter;
+    Errors = Leaf.ErrorDoc.create().define("AlreadyDestroyed").define("InvalidState").generate();
+  } else {
+    EventEmitter = (require("eventex")).EventEmitter;
+    Errors = (require("error-doc")).create().define("AlreadyDestroyed").define("InvalidState").generate();
+  }
 
   States = (function(_super) {
     __extends(States, _super);
@@ -755,11 +759,13 @@
       if (this.data.feeds[name].length > 0) {
         return callback(this.consume(name));
       } else {
-        return this.data.feeds[name].feedListener = (function(_this) {
+        this.data.feeds[name].feedListener = (function(_this) {
           return function() {
             return callback(_this.consume(name));
           };
         })(this);
+        this.emit("starve", name);
+        return this.emit("starve/" + name);
       }
     };
 
@@ -895,7 +901,11 @@
 
   })(EventEmitter);
 
-  Leaf.States = States;
+  if (typeof Leaf !== "undefined") {
+    Leaf.States = States;
+  } else {
+    module.exports = States;
+  }
 
   KeyEventManager = (function(_super) {
     __extends(KeyEventManager, _super);
@@ -1129,6 +1139,8 @@
   Key.backSlash = 220;
 
   Key.slash = 191;
+
+  Key.equal = 187;
 
   Key.comma = 188;
 

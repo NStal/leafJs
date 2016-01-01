@@ -129,6 +129,7 @@ Key.openBracket = 219
 Key.closeBracket = 221
 Key.backSlash = 220
 Key.slash = 191
+Key.equal = 187
 Key.comma = 188
 Key.period = 190
 Key.dash = 189

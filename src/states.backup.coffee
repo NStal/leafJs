@@ -28,19 +28,11 @@
 #        if not @checkSole sole
 #            return
 #
-
-if typeof Leaf isnt "undefined"
-    EventEmitter = Leaf.EventEmitter
-    Errors = Leaf.ErrorDoc.create()
-        .define("AlreadyDestroyed")
-        .define("InvalidState")
-        .generate()
-else
-    EventEmitter = (require "eventex").EventEmitter
-    Errors = (require "error-doc").create()
-        .define("AlreadyDestroyed")
-        .define("InvalidState")
-        .generate()
+EventEmitter = Leaf.EventEmitter
+Errors = Leaf.ErrorDoc.create()
+    .define("AlreadyDestroyed")
+    .define("InvalidState")
+    .generate()
 class States extends EventEmitter
     @Errors = Errors
     constructor:()->
@@ -299,7 +291,6 @@ class States extends EventEmitter
             @_clearHandler = null
             if _handler
                 _handler()
-if typeof Leaf isnt "undefined"
-    Leaf.States = States
-else
-    module.exports = States
+
+
+Leaf.States = States
