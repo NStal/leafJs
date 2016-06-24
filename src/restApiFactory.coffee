@@ -51,8 +51,8 @@ class RestApiFactory
         if err
             callback err
             return
-        if data.state
-            callback null,data.data
+        if data[@stateField]
+            callback null,data[@dataField]
             return
         else
             callback data.error or new Errors.ServerError("server return state false but not return any error information",{raw:data})
@@ -74,7 +74,7 @@ class RestApiFactory
             clearTimeout timer
             # disable multiple callback
             callback = ->
-            (option.parser or @parse)(err,response,_callback)
+            (option.parser or @parse.bind(this))(err,response,_callback)
         if option.timeout
             timer = setTimeout ()->
                 callback = ->

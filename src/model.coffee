@@ -33,6 +33,14 @@ class Model extends EventEmitter
         if @_defines[name]
             return true
         return false
+    undeclare:(name)->
+        if name instanceof Array
+            for item in name
+                @undeclare item
+            return
+        delete @_defines[name]
+        delete @data[name]
+        delete @[name]
     declare:(name)->
         if name instanceof Array
             for item in name
@@ -52,10 +60,13 @@ class Model extends EventEmitter
                 obj.value = value
                 if @_silent
                     return value
-                @emit "change",name,value
+                change = {}
+                change[name] = value
+                @emit "change",change
                 @emit "change/#{name}",value
                 return value
             ,enumerable:true
+            ,configurable:true
         }
         Object.defineProperty @data,name,accessor
         if typeof this[name] is "undefined"
@@ -85,22 +96,33 @@ class Model extends EventEmitter
         # set will force change event
         # when data[key] is value the set property listener
         # won't fire change event, so we fire it here to force a change event
-        if not @_silent and @data[key] is value
-            @emit "change"
-            @emit "change/#{key}",value
+        _silent = @_silent
+        @_silent = true
         @data[key] = value
+        @_silent = _silent
+
+        change = {}
+        change[key] = value
+        @emit "change",change
+        @emit "change/#{key}",value
     sets:(obj)->
         if not obj
             return
-        @_silent = true
+        change = {}
+        changed = false
         for prop of @_defines
             if typeof obj[prop] isnt "undefined"
                 value = obj[prop]
                 if @get(prop) isnt value
-                    @set prop,value
+                    changed = true
+                    change[prop] = value
+                    _silent = @_silent
+                    @_silent = true
+                    @data[prop] = value
+                    @_silent = _silent
                     @emit "change/#{prop}",value
-        @emit "change"
-        @_silent = false
+        if changed
+            @emit "change",change
     preset:(key,value)->
         if not @_defines[key]
             throw new Error "undefined model property #{key} for #{@constructor.name}"
@@ -128,7 +150,7 @@ class Model extends EventEmitter
             for prop of @_defines
                 @confirm prop
             return
-        if @_defines[key].unstable 
+        if @_defines[key].unstable
             delete @_defines[key].old
             @_defines[key].unstable = false
     toJSON:(option = {})->
@@ -150,7 +172,6 @@ class Model extends EventEmitter
                 continue
             else if typeof result[prop].toJSON is "function"
                 result[prop] = result[prop].toJSON({complete:complete})
-            
+
         return result
 Leaf.Model = Model
-

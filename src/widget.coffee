@@ -1,6 +1,11 @@
 class Widget extends Leaf.EventEmitter
+    widgetEvents:[]
+    _interestingDOMEventNames:["click","mouseup","mousedown","mousemove","mouseleave","mouseenter","mouseover","keydown","keyup","keypress"]
     constructor:(option = null)->
         super()
+        # So prototype don't accidentally modified.
+        @_interestingDOMEventNames = @_interestingDOMEventNames.slice(0)
+        @widgetEvents = @widgetEvents.slice()
         template = null
         if not option
             template = null
@@ -22,12 +27,25 @@ class Widget extends Leaf.EventEmitter
     include:(widget)->
         @namespace = @namespace or (@constructor and @constructor.namespace) or Widget.ns or new Leaf.Namespace()
         @namespace.include widget
-
+        for name in (widget?.prototype?.widgetEvents or [])
+            if name not in @_interestingDOMEventNames
+                @_interestingDOMEventNames.push name
     # make template into HTMLElement
     # if template is html strings
     # it will parsed into HTMLElement
     # if template start with #
     # it will be considered as a DOMElement in the current DOM tree
+    bubbleDOMEvent:(name,props = {})->
+        if name not in (@widgetEvents or [])
+            console.error "You should declare CustomDOMEvent \"#{name}\" in @widgetEvents"
+        e = new CustomEvent(name,{
+            bubbles:true
+            cancelable:true
+        })
+        for prop,value of props
+            e[prop] = value
+        @node.dispatchEvent e
+        return e
     initTemplate:(template)->
         if not template
             template = "<div></div>"
@@ -120,6 +138,8 @@ class Widget extends Leaf.EventEmitter
         for elem in elems
             @initSubWidget(elem)
     initSubWidget:(elem)->
+        if typeof elem is "string"
+            elem = @node.querySelector("[data-widget='#{elem}']")
         if not elem
             return
         elem.dataset ?= {}
@@ -154,8 +174,8 @@ class Widget extends Leaf.EventEmitter
         elems.unshift node
         for subNode in elems
             # don't include widget
-            if subNode.tagName.toLowerCase() is "widget"
-                continue
+            # if subNode.tagName.toLowerCase() is "widget"
+            #    continue
             if id = subNode.getAttribute "data-id"
                 @_bindUI(subNode,id)
                 @_delegateUnBubbleEvent(id)
@@ -178,7 +198,7 @@ class Widget extends Leaf.EventEmitter
     initDelegates:()->
         if @disableDelegates
             return
-        events = ["click","mouseup","mousedown","mousemove","mouseleave","mouseenter","mouseover","keydown","keyup","keypress"]
+        events = @_interestingDOMEventNames
         for event in events
             do (event)=>
                 @node.addEventListener event,(e)=>
@@ -320,7 +340,7 @@ class Widget extends Leaf.EventEmitter
         @removeAllListeners()
         # remove image src
         if @node and @node.querySelectorAll
-            for item in @node.querySelectorAll("img") or []
+            for item in (@node.querySelectorAll("img") or [])
                 item.removeAttribute("src")
 
 #Leaf.setGlobalNamespace = (ns)->

@@ -16,8 +16,11 @@ class EventEmitter
         console.error "Over MaxListener #{@maxListener}, may be a potential memory leak."
         #alias
 #        @trigger ?= @emit
-
+    _ensureEventPool:()->
+        @_events ?= {}
+        @_bubbles ?= []
     addListener:(event,callback,context)->
+        @_ensureEventPool()
         handlers = @_events[event] = @_events[event] || []
         handler =
             callback:callback
@@ -29,6 +32,7 @@ class EventEmitter
     on:()->
         @addListener.apply(this,arguments)
     removeListener:(event,listener)->
+        @_ensureEventPool()
         handlers =  @_events[event]
         if not listener
             return
@@ -39,6 +43,7 @@ class EventEmitter
         @_events[event] = handlers.filter (item)->item
         return this
     removeAllListeners:(event)->
+        @_ensureEventPool()
         if event
             @_events[event] = []
         else
@@ -61,6 +66,7 @@ class EventEmitter
                 params)
         return this
     once:(event,callback,context)->
+        @_ensureEventPool()
         handlers = @_events[event] = @_events[event] || []
         handler =
             callback:callback
@@ -71,6 +77,7 @@ class EventEmitter
             @warnLeak()
         return this
     bubble:(emitter,event,processor)->
+        @_ensureEventPool()
         listener = (args...)=>
             if processor
                 args = processor.apply(this,args)
@@ -80,6 +87,7 @@ class EventEmitter
         emitter.on event,listener
         @_bubbles.push {emitter:emitter,event:event,listener:listener}
     stopBubble:(emitter,event)->
+        @_ensureEventPool()
         @_bubbles = @_bubbles.filter (item)->
             if item.emitter is emitter
                 # remove any event or the same event as user said
@@ -89,11 +97,13 @@ class EventEmitter
             return true
         return this
     stopAllBubbles:()->
+        @_ensureEventPool()
         for item in @_bubbles
             item.emitter.removeListener item.event,item.listener
         @_bubbles.length = 0
         return this
     listenBy:(who,event,callback,context)->
+        @_ensureEventPool()
         @_events[event] = @_events[event] or []
         handlers = @_events[event]
         handler =
@@ -105,6 +115,7 @@ class EventEmitter
             @warnLeak()
         return this
     listenByOnce:(who,event,callback,context)->
+        @_ensureEventPool()
         @_events[event] = @_events[event] or []
         handlers = @_events[event]
         handler =
@@ -117,6 +128,7 @@ class EventEmitter
             @warnLeak()
         return this
     stopListenBy:(who)->
+        @_ensureEventPool()
         for event of @_events
             handlers = @_events[event]
             if not handlers then continue

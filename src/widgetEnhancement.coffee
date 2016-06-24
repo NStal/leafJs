@@ -1,7 +1,7 @@
 WidgetBase = Widget
 class Widget extends Widget
     @namespace = WidgetBase.namespace
-    @attrs = ["text","html","class","value","attribute","src"]
+    @attrs = ["text","html","class","value","attribute","src","prop"]
     constructor:(template)->
         @_ViewModel = new Model()
         super template
@@ -30,6 +30,16 @@ class Widget extends Widget
                 @["_#{attr}Role"](elem,info)
     removeRenderRole:(elem)->
         @_ViewModel.stopListenBy elem
+    _propRole:(elem,who)->
+        whats = whats.split(",").map((item)->item.trim().split(":")).filter (pair)->pair.length is 1 or pair.length is 2
+        for pair in whats
+            do (pair)=>
+                name = pair[0]
+                who = pair[1] or name
+                if not @_ViewModel.has who
+                    @_ViewModel.declare who
+                @_ViewModel.listenBy elem,"change/#{who}",(value)=>
+                    elem[name] = value
     _textRole:(elem,who)->
         if not @_ViewModel.has who
             @_ViewModel.declare who
@@ -62,7 +72,7 @@ class Widget extends Widget
                             removeClass = true
                     if not className and typeof value is "boolean"
                         decision = value
-                        value = who
+                        value = Leaf.Util.camelToSlug who
                         if not decision
                             removeClass = true
                     if removeClass
@@ -91,6 +101,7 @@ class Widget extends Widget
                     @_ViewModel.declare who
                 @_ViewModel.listenBy elem,"change/#{who}",(value)=>
                     elem.setAttribute name,value
+                    elem[name] = value
     _valueRole:(elem,who)->
         @_attributeRole(elem,"value:#{who}")
     _srcRole:(elem,who)->

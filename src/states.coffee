@@ -96,14 +96,27 @@ class States extends EventEmitter
             fn = clearImmediate
         else
             fn = clearTimeout
-    setState:(state)->
+    setState:(state,args...)->
         @_clearTick @_stateTimer
         if @forceAsync
             @_stateTimer = @_nextTick ()=>
-                @_setState state
+                if @_isDebugging
+                    @_setState state,args...
+                else
+                    @_try ()=>
+                        @_setState state,args...
         else
-            @_setState state
-    _setState:(state)->
+            if @_isDebugging
+                @_setState state,args...
+            else
+                @_try ()=>
+                    @_setState state,args...
+    _try:(fn)=>
+        try
+            fn()
+        catch e
+            @error e
+    _setState:(state,args...)->
         @_clearTick @_stateTimer
         if not state
             throw new Errors.InvalidState "Can't set invalid states #{state}"
@@ -118,22 +131,26 @@ class States extends EventEmitter
         @stopWaiting()
         @previousState = @state
         @state = state
-#        if @_waitingGiveName
-#            throw new Errors.InvalidState "Can't change to state #{state} while waiting for #{@_waitingGiveName}"
         if @_isDebugging and @_debugStateHandler
             @_debugStateHandler()
-        @emit "state",state
-        @emit "state/#{state}"
+        @emit "state",state,args...
+        @emit "state/#{state}",args...
         stateHandler = "at"+state[0].toUpperCase()+state.substring(1)
         if this[stateHandler]
             sole = @_sole
             this[stateHandler] ()=>
                 sole isnt @_sole
+            ,args...
+        else if state not in ["void"]
+            if console.warn
+                console.warn "state handler #{stateHandler} not provided"
+            else
+                console.error "state handler #{stateHandler} not provided"
     error:(error)->
         @panicError = error
         @panicState = @state
         for rescue in @rescues
-            if rescue.state is @panicState and @panicError instanceof rescue.error
+            if rescue.state is @panicState and (@panicError instanceof rescue.error or not rescue.error)
                 if @_debugRescueHandler
                     @_debugRescueHandler()
                 @recover()
@@ -189,11 +206,27 @@ class States extends EventEmitter
         if listener = @data.feeds[name].feedListener
             @data.feeds[name].feedListener = null
             listener()
-    consume:(name)->
+    consumeAll:(name)->
         if @data.feeds?[name]?
-            return @data.feeds[name].shift()
-        else
+            length = @data.feeds[name].length or 0
+            @data.feeds[name] = []
+            return length
+        return 0
+    hasFeed:(name)->
+        return @data.feeds?[name]?.length > 0
+    consume:(name)->
+        if not @hasFeed name
             return null
+        if @data.feeds?[name]?
+            return @data.feeds[name].shift() or true
+    consumeWhenAvailableMergeToLast:(name,callback)->
+        @consumeWhenAvailable name,(detail)=>
+            while last = @consume name
+                continue
+            if last
+                callback(last)
+            else
+                callback detail
     consumeWhenAvailable:(name,callback)->
         @data.feeds ?= {}
         @data.feeds[name] ?= []
@@ -218,10 +251,12 @@ class States extends EventEmitter
 
         if @_isDebugging and @_debugPanicHandler
             @_debugPanicHandler()
+        console.error @panicError,@panicState
         @emit "panic",@panicError,@panicState
     reset:(data = {})->
         @data = data
         @respawn()
+        @emit "reset"
     getSole:()->
         return @_sole
     checkSole:(sole)->

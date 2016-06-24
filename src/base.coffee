@@ -1,5 +1,5 @@
 Leaf = {}
-if not exports
+if not module?
     exports = Leaf
     window.Leaf = Leaf
 else

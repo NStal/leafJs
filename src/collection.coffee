@@ -36,7 +36,7 @@ class Collection extends EventEmitter
         target = null
         if @id
             # if model check id else  make model as id
-            if model instanceof Model
+            if model instanceof Leaf.Model
                 id = model.get(@id)
             else
                 id = model
@@ -57,7 +57,7 @@ class Collection extends EventEmitter
     validate:(model)->
         return true
     add:(model)->
-        if not (model instanceof Model)
+        if not (model instanceof Leaf.Model)
             throw new Error "add invalid model, not instanceof Leaf.Model"
         # has id and find an old one
         # so we return the old one
