@@ -65,7 +65,7 @@ class Widget extends Leaf.EventEmitter
                 tempNode.removeChild(@node)
         else if Util.isHTMLNode(template)
             @node = template
-        @node.widget = this
+        @node.selfWidget = this
         # insert tr or td tag into div or something
         # may cause failure to generate elements
         # but we only handle it in latter version
@@ -136,6 +136,8 @@ class Widget extends Leaf.EventEmitter
         # so we buffered it
         elems = [].slice.call(elems,0)
         for elem in elems
+            if elem is @node
+                continue
             @initSubWidget(elem)
     initSubWidget:(elem)->
         if typeof elem is "string"
@@ -162,11 +164,12 @@ class Widget extends Leaf.EventEmitter
                         widget.node.classList.add item
                 else
                     widget.node.setAttribute(attr.name,attr.value)
+        widget.parentWidget = this
         if name? and not @[name]?
             @[name] = widget
+        # data-id -> UI.name binding for parent=>subwidget
         if elem.dataset.id
             @_bindUI(widget.node,elem.dataset.id)
-
     initUI:()->
         node = @node
         elems = node.querySelectorAll "[data-id]"
@@ -182,12 +185,12 @@ class Widget extends Leaf.EventEmitter
         @_delegateUnBubbleEvent()
         return true
     _bindUI:(node,id)->
-            @UI[id] = node
-            node.widget = this
-            node.uiId = id
-            # handy jquery like helper
-            if typeof $ is "function"
-                @UI[id+"$"] = @UI["$"+id] = $(node)
+        @UI[id] = node
+        node.widget = this
+        node.uiId = id
+        # handy jquery like helper
+        if typeof $ is "function"
+            @UI[id+"$"] = @UI["$"+id] = $(node)
     _delegateTo:(type,name,event)->
         fnName = "on#{Util.capitalize event.type}#{Util.capitalize name}"
         if type is "group"

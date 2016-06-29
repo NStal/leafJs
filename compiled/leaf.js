@@ -1841,7 +1841,7 @@
           continue;
         }
         widget.node.setAttribute(attr.name, attr.value);
-        widget.node[attr.name] = attr.value;
+        widget.node[Leaf.Util.slugToCamel(attr.name)] = attr.value;
       }
       return widget;
     };
@@ -1952,7 +1952,7 @@
       } else if (Util.isHTMLNode(template)) {
         this.node = template;
       }
-      this.node.widget = this;
+      this.node.selfWidget = this;
       if (!this.node) {
         this.isValid = false;
         return;
@@ -2041,6 +2041,9 @@
       results1 = [];
       for (j = 0, len = elems.length; j < len; j++) {
         elem = elems[j];
+        if (elem === this.node) {
+          continue;
+        }
         results1.push(this.initSubWidget(elem));
       }
       return results1;
@@ -2079,6 +2082,7 @@
           }
         }
       }
+      widget.parentWidget = this;
       if ((name != null) && (this[name] == null)) {
         this[name] = widget;
       }
@@ -2388,6 +2392,7 @@
 
     Widget.prototype.initViewModel = function() {
       var attrs, elem, elems, j, len, results1, selector;
+      this.renderingElements = [];
       attrs = Widget.attrs;
       selector = (attrs.map(function(item) {
         return "[data-" + item + "]";
@@ -2405,23 +2410,76 @@
       return results1;
     };
 
-    Widget.prototype.applyRenderRole = function(elem) {
-      var attr, attrs, info, j, len, results1;
+    Widget.prototype.handoverUI = function(name) {
+      var attr, attrs, el, elem, j, k, len, len1, ref, ref1, selector, value;
+      el = this.UI[name];
+      if (!el) {
+        console.warn("Hand over UI " + name + " not exists");
+        return;
+      }
+      ref = this.renderingElements;
+      for (j = 0, len = ref.length; j < len; j++) {
+        elem = ref[j];
+        if (elem === el || el.contains(elem)) {
+          this.removeRenderRole(elem);
+          attrs = (function() {
+            var k, len1, ref1, results1;
+            ref1 = elem.attributes;
+            results1 = [];
+            for (k = 0, len1 = ref1.length; k < len1; k++) {
+              attr = ref1[k];
+              results1.push(attr);
+            }
+            return results1;
+          })();
+          for (k = 0, len1 = attrs.length; k < len1; k++) {
+            attr = attrs[k];
+            if (((ref1 = attr.name) != null ? ref1.indexOf("solved-data") : void 0) === 0) {
+              name = attr.name;
+              value = attr.value;
+              elem.removeAttribute(attr.name);
+              elem.setAttribute(name.replace("solved-", ""), value);
+            }
+          }
+        }
+      }
       attrs = Widget.attrs;
-      results1 = [];
+      return selector = (attrs.map(function(item) {
+        return "[data-" + item + "]";
+      })).join(",");
+    };
+
+    Widget.prototype.applyRenderRole = function(elem) {
+      var attr, attrs, info, j, len, solvedAttr, solvedOldValue, value;
+      attrs = Widget.attrs;
+      if (elem.renderRoleProvider !== this) {
+        this.renderingElements.push(elem);
+      }
       for (j = 0, len = attrs.length; j < len; j++) {
         attr = attrs[j];
         if (info = elem.getAttribute("data-" + attr)) {
-          results1.push(this["_" + attr + "Role"](elem, info));
-        } else {
-          results1.push(void 0);
+          this["_" + attr + "Role"](elem, info);
+          elem.removeAttribute("data-" + attr);
+          solvedAttr = "solved-data-" + attr;
+          solvedOldValue = elem.getAttribute(solvedAttr);
+          if (solvedOldValue) {
+            value = solvedOldValue + (";" + info);
+          } else {
+            value = info;
+          }
+          elem.setAttribute(solvedAttr, value);
         }
       }
-      return results1;
+      return elem.renderRoleProvider = this;
     };
 
     Widget.prototype.removeRenderRole = function(elem) {
-      return this._ViewModel.stopListenBy(elem);
+      if (elem.renderRoleProvider !== this) {
+        console.warn("Invalid elem render role remove action.");
+        return;
+      }
+      this._ViewModel.stopListenBy(elem);
+      return elem.renderRoleProvider = null;
     };
 
     Widget.prototype._propRole = function(elem, who) {

@@ -52,7 +52,7 @@ class Namespace extends Leaf.EventEmitter
                 widget.node.className += " " + attr.value
                 continue
             widget.node.setAttribute(attr.name,attr.value)
-            widget.node[attr.name] = attr.value
+            widget.node[Leaf.Util.slugToCamel attr.name] = attr.value
         return widget
     setTemplates:(templates)->
         @templates = templates

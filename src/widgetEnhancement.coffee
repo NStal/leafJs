@@ -15,6 +15,7 @@ class Widget extends Widget
         super template
         @initViewModel()
     initViewModel:()->
+        @renderingElements = []
         attrs = Widget.attrs
         selector = (attrs.map (item)->"[data-#{item}]").join(",")
         if not @node.querySelectorAll
@@ -23,13 +24,55 @@ class Widget extends Widget
         elems.push @node
         for elem in elems
             @applyRenderRole(elem)
-    applyRenderRole:(elem)->
+    # give away all the controlls except UI's
+    handoverUI:(name)->
+        el = @UI[name]
+        if not el
+            console.warn "Hand over UI #{name} not exists"
+            return
+        for elem in @renderingElements
+            if elem is el or el.contains elem
+                @removeRenderRole(elem)
+                attrs = (attr for attr in elem.attributes)
+                for attr in attrs
+                    if attr.name?.indexOf("solved-data") is 0
+                        name = attr.name
+                        value = attr.value
+                        elem.removeAttribute attr.name
+                        elem.setAttribute name.replace("solved-",""),value
         attrs = Widget.attrs
+        selector = (attrs.map (item)->"[data-#{item}]").join(",")
+    applyRenderRole:(elem)->
+        #if elem.renderRoleProvider and elem.renderRoleProvider isnt this and not force
+        #    el = elem
+        #    while el and el isnt @node
+        #        if el.selfWidget and el.selfWidget isnt this
+        #            # not direct manager
+        #            return false
+        #        el = el.parentElement
+        attrs = Widget.attrs
+        if elem.renderRoleProvider isnt this
+            @renderingElements.push elem
         for attr in attrs
             if info = elem.getAttribute("data-#{attr}")
                 @["_#{attr}Role"](elem,info)
+                elem.removeAttribute("data-#{attr}")
+                # save attr for debug use
+                solvedAttr = "solved-data-#{attr}"
+                solvedOldValue = elem.getAttribute(solvedAttr)
+                if solvedOldValue
+                    value = solvedOldValue + ";#{info}"
+                else
+                    value = info
+                elem.setAttribute(solvedAttr,value)
+        elem.renderRoleProvider = this
     removeRenderRole:(elem)->
+
+        if elem.renderRoleProvider isnt this
+            console.warn "Invalid elem render role remove action."
+            return
         @_ViewModel.stopListenBy elem
+        elem.renderRoleProvider = null
     _propRole:(elem,who)->
         whats = whats.split(",").map((item)->item.trim().split(":")).filter (pair)->pair.length is 1 or pair.length is 2
         for pair in whats
