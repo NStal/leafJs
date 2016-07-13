@@ -64,9 +64,10 @@ class RestApiFactory
         else
             url = option.url
         xhr = new XMLHttpRequest()
+        #xhr.setRequestHeader("Accept","application/json")
         xhr.open(method,url,true)
+        xhr.setRequestHeader("Accept","application/json")
         xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded")
-        #xhr.responseType = option.dataType or "json"
         done = false
         _callback = callback
         timer = null

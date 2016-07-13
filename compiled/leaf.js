@@ -1789,7 +1789,8 @@
     Namespace.prototype.register = function(constructor, name) {
       if (!name) {
         name = constructor.name;
-      } else if (!(constructor instanceof Leaf.Widget) || !name) {
+      }
+      if (!((constructor != null ? constructor.prototype : void 0) instanceof Leaf.Widget) || !name) {
         throw new Error("invalid namespace register with " + name);
       }
       if (indexOf.call(this.widgets, constructor) >= 0) {
@@ -1891,10 +1892,10 @@
       this._models = [];
     }
 
-    Widget.prototype.include = function(widget) {
-      var j, len, name, ref, ref1, results1;
+    Widget.prototype.include = function(widget, name) {
+      var j, len, ref, ref1, results1;
       this.namespace = this.namespace || (this.constructor && this.constructor.namespace) || Widget.ns || new Leaf.Namespace();
-      this.namespace.include(widget);
+      this.namespace.include(widget, name);
       ref1 = (widget != null ? (ref = widget.prototype) != null ? ref.widgetEvents : void 0 : void 0) || [];
       results1 = [];
       for (j = 0, len = ref1.length; j < len; j++) {
@@ -2391,7 +2392,7 @@
     };
 
     Widget.prototype.initViewModel = function() {
-      var attrs, elem, elems, j, len, results1, selector;
+      var attrs, elem, elems, j, len, selector;
       this.renderingElements = [];
       attrs = Widget.attrs;
       selector = (attrs.map(function(item) {
@@ -2401,13 +2402,11 @@
         return;
       }
       elems = [].slice.call(this.node.querySelectorAll(selector));
-      elems.push(this.node);
-      results1 = [];
       for (j = 0, len = elems.length; j < len; j++) {
         elem = elems[j];
-        results1.push(this.applyRenderRole(elem));
+        this.applyRenderRole(elem);
       }
-      return results1;
+      return this.applyRootRenderRole(this.node);
     };
 
     Widget.prototype.handoverUI = function(name) {
@@ -2434,7 +2433,7 @@
           })();
           for (k = 0, len1 = attrs.length; k < len1; k++) {
             attr = attrs[k];
-            if (((ref1 = attr.name) != null ? ref1.indexOf("solved-data") : void 0) === 0) {
+            if (((ref1 = attr.name) != null ? ref1.indexOf("solved-data") : void 0) === 0 && attr.name.indexOf("solved-data-root") !== 0) {
               name = attr.name;
               value = attr.value;
               elem.removeAttribute(attr.name);
@@ -2449,12 +2448,50 @@
       })).join(",");
     };
 
+    Widget.prototype.applyRootRenderRole = function(elem) {
+      var attr, attrs, info, j, len, results1, solvedAttr, solvedOldValue, value;
+      if (elem !== this.node) {
+        return;
+      }
+      if (elem.rootRenderRoleProvider) {
+        console.warn(elem, "already has a root render role provider");
+        return;
+      }
+      elem.rootRenderRoleProvider = this;
+      attrs = Widget.attrs;
+      results1 = [];
+      for (j = 0, len = attrs.length; j < len; j++) {
+        attr = attrs[j];
+        if (info = elem.getAttribute("data-" + attr)) {
+          this["_" + attr + "Role"](elem, info);
+          elem.removeAttribute("data-" + attr);
+          solvedAttr = "solved-data-root-" + attr;
+          solvedOldValue = elem.getAttribute(solvedAttr);
+          if (solvedOldValue) {
+            value = solvedOldValue + (";" + info);
+          } else {
+            value = info;
+          }
+          results1.push(elem.setAttribute(solvedAttr, value));
+        } else {
+          results1.push(void 0);
+        }
+      }
+      return results1;
+    };
+
     Widget.prototype.applyRenderRole = function(elem) {
       var attr, attrs, info, j, len, solvedAttr, solvedOldValue, value;
-      attrs = Widget.attrs;
-      if (elem.renderRoleProvider !== this) {
-        this.renderingElements.push(elem);
+      if (elem === this.node) {
+        console.warn("apply render role to root");
+        return;
       }
+      if (elem.renderRoleProvider) {
+        console.error("Duplicate render role", elem);
+        return;
+      }
+      this.renderingElements.push(elem);
+      attrs = Widget.attrs;
       for (j = 0, len = attrs.length; j < len; j++) {
         attr = attrs[j];
         if (info = elem.getAttribute("data-" + attr)) {
@@ -3310,6 +3347,7 @@
       }
       xhr = new XMLHttpRequest();
       xhr.open(method, url, true);
+      xhr.setRequestHeader("Accept", "application/json");
       xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
       done = false;
       _callback = callback;

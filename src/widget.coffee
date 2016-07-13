@@ -24,9 +24,9 @@ class Widget extends Leaf.EventEmitter
         @UI = {}
         @initTemplate(@template)
         @_models = []
-    include:(widget)->
+    include:(widget,name)->
         @namespace = @namespace or (@constructor and @constructor.namespace) or Widget.ns or new Leaf.Namespace()
-        @namespace.include widget
+        @namespace.include widget,name
         for name in (widget?.prototype?.widgetEvents or [])
             if name not in @_interestingDOMEventNames
                 @_interestingDOMEventNames.push name

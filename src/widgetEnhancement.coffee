@@ -21,9 +21,9 @@ class Widget extends Widget
         if not @node.querySelectorAll
             return
         elems = [].slice.call @node.querySelectorAll selector
-        elems.push @node
         for elem in elems
             @applyRenderRole(elem)
+        @applyRootRenderRole(@node)
     # give away all the controlls except UI's
     handoverUI:(name)->
         el = @UI[name]
@@ -35,24 +35,42 @@ class Widget extends Widget
                 @removeRenderRole(elem)
                 attrs = (attr for attr in elem.attributes)
                 for attr in attrs
-                    if attr.name?.indexOf("solved-data") is 0
+                    if attr.name?.indexOf("solved-data") is 0 and attr.name.indexOf("solved-data-root") isnt 0
                         name = attr.name
                         value = attr.value
                         elem.removeAttribute attr.name
                         elem.setAttribute name.replace("solved-",""),value
         attrs = Widget.attrs
         selector = (attrs.map (item)->"[data-#{item}]").join(",")
-    applyRenderRole:(elem)->
-        #if elem.renderRoleProvider and elem.renderRoleProvider isnt this and not force
-        #    el = elem
-        #    while el and el isnt @node
-        #        if el.selfWidget and el.selfWidget isnt this
-        #            # not direct manager
-        #            return false
-        #        el = el.parentElement
+    applyRootRenderRole:(elem)->
+        if elem isnt @node
+            return
+        if elem.rootRenderRoleProvider
+            console.warn elem,"already has a root render role provider"
+            return
+        elem.rootRenderRoleProvider = this
         attrs = Widget.attrs
-        if elem.renderRoleProvider isnt this
-            @renderingElements.push elem
+        for attr in attrs
+            if info = elem.getAttribute("data-#{attr}")
+                @["_#{attr}Role"](elem,info)
+                elem.removeAttribute("data-#{attr}")
+                # save attr for debug use
+                solvedAttr = "solved-data-root-#{attr}"
+                solvedOldValue = elem.getAttribute(solvedAttr)
+                if solvedOldValue
+                    value = solvedOldValue + ";#{info}"
+                else
+                    value = info
+                elem.setAttribute(solvedAttr,value)
+    applyRenderRole:(elem)->
+        if elem is @node
+            console.warn "apply render role to root"
+            return
+        if elem.renderRoleProvider
+            console.error "Duplicate render role",elem
+            return
+        @renderingElements.push elem
+        attrs = Widget.attrs
         for attr in attrs
             if info = elem.getAttribute("data-#{attr}")
                 @["_#{attr}Role"](elem,info)
@@ -67,7 +85,6 @@ class Widget extends Widget
                 elem.setAttribute(solvedAttr,value)
         elem.renderRoleProvider = this
     removeRenderRole:(elem)->
-
         if elem.renderRoleProvider isnt this
             console.warn "Invalid elem render role remove action."
             return

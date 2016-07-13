@@ -8,7 +8,7 @@ class Namespace extends Leaf.EventEmitter
     register:(constructor,name)->
         if not name
             name = constructor.name
-        else if constructor not instanceof Leaf.Widget or not name
+        if constructor?.prototype not instanceof Leaf.Widget or not name
             throw new Error "invalid namespace register with #{name}"
         if constructor in @widgets
             return
